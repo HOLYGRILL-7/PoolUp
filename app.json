@@ -1,5 +1,6 @@
 {
   "expo": {
+    "scheme": "poolup",
     "name": "PoolUp",
     "slug": "PoolUp",
     "version": "1.0.0",
@@ -24,7 +25,17 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#0d5c45"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+
   }
 }
