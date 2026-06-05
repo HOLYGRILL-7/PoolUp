@@ -1,14 +1,17 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import "../global.css";
+import "../global.css";import { Redirect } from "expo-router";
+
+
 
 const index = () => {
   return (
     <SafeAreaView className="flex-1 items-center justify-center">
       <View>
-        <Text className="text-2xl text-center">PoolUp</Text>
-        <Text className="text-center">Save together. Grow Together </Text>
+<Redirect href="/(onboarding)/welcome" />;
+        {/* <Text className="text-2xl text-center">PoolUp</Text>
+        <Text className="text-center">Save together. Grow Together </Text> */}
       </View>
     </SafeAreaView>
   );

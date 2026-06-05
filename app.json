@@ -9,9 +9,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#0d5c45"
     },
     "ios": {
       "supportsTablet": true
@@ -19,23 +19,19 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0d5c45"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.bismarkjones.PoolUp"
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#0d5c45"
-    },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font"
     ]
-
   }
 }
