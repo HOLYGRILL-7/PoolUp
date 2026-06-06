@@ -55,7 +55,7 @@ const Join = () => {
       className="flex-1 bg-[#f0f7f4]"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View className="flex-1 px-6 pt-12">
+      <View className="flex-1 px-6 pt-14">
 
         {/* Header */}
         <View className="flex-row items-center justify-between mb-12">
@@ -75,8 +75,8 @@ const Join = () => {
           </View>
 
           {/* TODO: wire up dark mode */}
-          <TouchableOpacity className="w-12 h-12 rounded-full bg-white items-center justify-center">
-            <Moon color="#0d5c45" size={20} />
+          <TouchableOpacity className="w-12 h-12 rounded-full bg-green-50 items-center justify-center">
+            <Moon color="green" size={20} />
           </TouchableOpacity>
         </View>
 
