@@ -5,47 +5,132 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import React, { useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Hash, Moon } from "lucide-react-native";
+import firestore from "@react-native-firebase/firestore";
+import auth from "@react-native-firebase/auth";
+import { useGroupStore } from "../../store/groupstore";
 
 const Join = () => {
   const router = useRouter();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
-
-  // one ref per input box for auto-jumping
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const setGroup = useGroupStore((state) => state.setGroup);
   const inputs = useRef<TextInput[]>([]);
 
   const handleChange = (text: string, index: number) => {
-    // only allow one digit per box
     const digit = text.replace(/[^0-9]/g, "").slice(-1);
-
     const newCode = [...code];
     newCode[index] = digit;
     setCode(newCode);
-
-    // auto jump to next box
     if (digit && index < 5) {
       inputs.current[index + 1]?.focus();
     }
   };
 
   const handleBackspace = (key: string, index: number) => {
-    // jump back to previous box on backspace
     if (key === "Backspace" && !code[index] && index > 0) {
       inputs.current[index - 1]?.focus();
     }
   };
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     const fullCode = code.join("");
     if (fullCode.length < 6) return;
 
-    // TODO: verify code against Firestore
-    // TODO: add user to group
-    // TODO: navigate to home
-    console.log("Code entered:", fullCode);
+    setLoading(true);
+    setError("");
+
+    try {
+      const user = auth().currentUser;
+      if (!user) throw new Error("Not logged in");
+
+      const snapshot = await firestore()
+        .collection("groups")
+        .where("code", "==", fullCode)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) {
+        setError("Invalid code. Check with your admin and try again.");
+        setLoading(false);
+        return;
+      }
+
+      const groupDoc = snapshot.docs[0];
+      const groupData = groupDoc.data();
+
+      const alreadyMember = groupData.members?.some(
+        (m: any) => m.uid === user.uid
+      );
+
+      if (alreadyMember) {
+        setGroup(groupDoc.id, groupData.code, groupData.name);
+        router.replace("/(home)/dashboard");
+        return;
+      }
+
+      const db = firestore();
+      const batch = db.batch();
+      const groupRef = db.collection("groups").doc(groupDoc.id);
+      
+      const existingMembersCount = groupData.members?.length || 0;
+      const newSplitAmount = Math.round(groupData.savingsGoal / (existingMembersCount + 1));
+      
+      batch.update(groupRef, {
+        memberIds: firestore.FieldValue.arrayUnion(user.uid),
+        members: firestore.FieldValue.arrayUnion({
+          uid: user.uid,
+          phone: user.phoneNumber || "",
+          name: user.displayName || user.phoneNumber || "Unknown",
+          isAdmin: false,
+          joinedAt: firestore.Timestamp.now(),
+          status: "pending",
+        }),
+      });
+
+      const nextDueDate = groupData.nextDueDate || firestore.Timestamp.fromDate(new Date());
+
+      // Seed the new member's payment doc
+      const newMemberPaymentRef = groupRef.collection("payments").doc(user.uid);
+      batch.set(newMemberPaymentRef, {
+        memberUid: user.uid,
+        memberPhone: user.phoneNumber || "",
+        memberName: user.displayName || user.phoneNumber || "Unknown",
+        amount: newSplitAmount,
+        status: "pending",
+        dueDate: nextDueDate,
+        paidAt: null,
+        transactionId: null,
+        createdAt: firestore.Timestamp.now(),
+      });
+
+      // Update amount for other members' pending payments
+      if (groupData.members) {
+        groupData.members.forEach((m: any) => {
+          if (m.status === "pending" || !m.status) {
+            const memberPaymentRef = groupRef.collection("payments").doc(m.uid);
+            batch.update(memberPaymentRef, {
+              amount: newSplitAmount,
+            });
+          }
+        });
+      }
+
+      await batch.commit();
+
+      setGroup(groupDoc.id, groupData.code, groupData.name);
+      router.replace("/(home)/dashboard");
+
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Try again.");
+      setLoading(false);
+    }
   };
 
   const isComplete = code.every((d) => d !== "");
@@ -57,24 +142,14 @@ const Join = () => {
     >
       <View className="flex-1 px-6 pt-14">
 
-        {/* Header */}
+        {/* Header — back button and dark mode toggle only */}
         <View className="flex-row items-center justify-between mb-12">
-          <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-              className="w-12 h-12 rounded-full bg-white items-center justify-center"
-              onPress={() => router.back()}
-            >
-              <ArrowLeft color="#0d5c45" size={20} />
-            </TouchableOpacity>
-            <Text
-              style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 22 }}
-              className="text-gray-800"
-            >
-              Join a Group
-            </Text>
-          </View>
-
-          {/* TODO: wire up dark mode */}
+          <TouchableOpacity
+            className="w-12 h-12 rounded-full bg-white items-center justify-center"
+            onPress={() => router.back()}
+          >
+            <ArrowLeft color="#0d5c45" size={20} />
+          </TouchableOpacity>
           <TouchableOpacity className="w-12 h-12 rounded-full bg-green-50 items-center justify-center">
             <Moon color="green" size={20} />
           </TouchableOpacity>
@@ -106,13 +181,11 @@ const Join = () => {
         </View>
 
         {/* 6 digit input boxes */}
-        <View className="flex-row justify-between mb-10">
+        <View className="flex-row justify-between mb-6">
           {code.map((digit, index) => (
             <TextInput
               key={index}
-              ref={(ref) => {
-                if (ref) inputs.current[index] = ref;
-              }}
+              ref={(ref) => { if (ref) inputs.current[index] = ref; }}
               value={digit}
               onChangeText={(text) => handleChange(text, index)}
               onKeyPress={({ nativeEvent }) =>
@@ -120,28 +193,48 @@ const Join = () => {
               }
               keyboardType="number-pad"
               maxLength={1}
+              editable={!loading}
               style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 24 }}
               className={`w-14 h-14 rounded-2xl text-center text-[#0d5c45]
-                ${digit ? "bg-white border-2 border-[#0d5c45]" : "bg-emerald-50 border-2 border-emerald-100"}
+                ${digit
+                  ? "bg-white border-2 border-[#0d5c45]"
+                  : "bg-emerald-50 border-2 border-emerald-100"
+                }
               `}
             />
           ))}
         </View>
 
+        {/* Error message — sits between inputs and button */}
+        {error ? (
+          <Text
+            style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+            className="text-red-400 text-center mb-4"
+          >
+            {error}
+          </Text>
+        ) : (
+          <View className="mb-4" />
+        )}
+
         {/* Join button */}
         <TouchableOpacity
           onPress={handleJoin}
-          disabled={!isComplete}
+          disabled={!isComplete || loading}
           className={`rounded-full py-4 items-center justify-center mb-6
-            ${isComplete ? "bg-[#F5A623]" : "bg-[#F5A623]/40"}
+            ${isComplete && !loading ? "bg-[#F5A623]" : "bg-[#F5A623]/40"}
           `}
         >
-          <Text
-            style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }}
-            className="text-white"
-          >
-            Join group
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text
+              style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }}
+              className="text-white"
+            >
+              Join group
+            </Text>
+          )}
         </TouchableOpacity>
 
         {/* Bottom link */}

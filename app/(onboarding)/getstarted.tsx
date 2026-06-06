@@ -116,7 +116,10 @@ const GetStarted = () => {
       <View className="w-full px-6 gap-4 mt-10">
         {/* Create a group button */}
         <Animated.View style={animStyle(anim4)}>
-          <TouchableOpacity className="bg-[#2e8b71] rounded-full py-4 flex-row items-center justify-center gap-3">
+          <TouchableOpacity
+            className="bg-[#2e8b71] rounded-full py-4 flex-row items-center justify-center gap-3"
+            onPress={() => router.push("/(groups)/creategroup")}
+          >
             <Users color="white" size={20} />
             <Text
               style={{ fontFamily: "Nunito_700Bold" }}
@@ -131,7 +134,7 @@ const GetStarted = () => {
         <Animated.View style={animStyle(anim5)}>
           <TouchableOpacity
             className="border-2 border-[#0d5c45] rounded-full py-4 flex-row items-center justify-center gap-3"
-            onPress={() => router.push("/join")}
+            onPress={() => router.push("/(onboarding)/join")}
           >
             <Hash color="#0d5c45" size={20} />
             <Text
@@ -153,7 +156,7 @@ const GetStarted = () => {
           >
             Already have an account?
           </Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/(auth)/phone")}>
             <Text
               style={{ fontFamily: "Nunito_700Bold" }}
               className="text-[#084937] font-bold"

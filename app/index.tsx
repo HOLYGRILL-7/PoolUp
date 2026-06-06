@@ -1,53 +1,62 @@
-import { StyleSheet, Text, View } from "react-native";
-import React from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import "../global.css";import { Redirect } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Redirect } from "expo-router";
+import auth from "@react-native-firebase/auth";
+import firestore from "@react-native-firebase/firestore";
+import { View, ActivityIndicator } from "react-native";
+import { useGroupStore } from "../store/groupstore";
+import "../global.css";
 
+const Index = () => {
+  const [loading, setLoading] = useState(true);
+  const [targetRoute, setTargetRoute] = useState<string | null>(null);
+  const setGroup = useGroupStore((state) => state.setGroup);
 
+  useEffect(() => {
+    // onAuthStateChanged is a Firebase listener that fires every time
+    // the auth state changes — on app open, on login, on logout.
+    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Check if this user is a member of any group
+          const snapshot = await firestore()
+            .collection("groups")
+            .where("memberIds", "array-contains", firebaseUser.uid)
+            .limit(1)
+            .get();
 
-const index = () => {
-  return (
-    <SafeAreaView className="flex-1 items-center justify-center">
-      <View>
-<Redirect href="/(onboarding)/welcome" />;
-        {/* <Text className="text-2xl text-center">PoolUp</Text>
-        <Text className="text-center">Save together. Grow Together </Text> */}
+          if (!snapshot.empty) {
+            const groupDoc = snapshot.docs[0];
+            const data = groupDoc.data();
+            setGroup(groupDoc.id, data.code, data.name);
+            setTargetRoute("/(home)/dashboard");
+          } else {
+            // User is logged in but hasn't joined or created a group yet
+            setTargetRoute("/(onboarding)/getstarted");
+          }
+        } catch (err) {
+          console.error("Error checking group membership on start:", err);
+          setTargetRoute("/(onboarding)/getstarted");
+        }
+      } else {
+        // Not logged in
+        setTargetRoute("/(onboarding)/welcome");
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Still checking Firebase/Firestore — show a spinner
+  if (loading || !targetRoute) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#f0f7f4" }}>
+        <ActivityIndicator color="#0d5c45" size="large" />
       </View>
-    </SafeAreaView>
-  );
+    );
+  }
+
+  return <Redirect href={targetRoute as any} />;
 };
 
-export default index;
-
-const styles = StyleSheet.create({});
-
-// import { registerRootComponent } from 'expo';
-
-// import App from '../App';
-
-// // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// // It also ensures that whether you load the app in Expo Go or in a native build,
-// // the environment is set up appropriately
-// registerRootComponent(App);
-
-// -----------App.Tsx-------------
-// import { StatusBar } from 'expo-status-bar';
-// import { StyleSheet, Text, View } from 'react-native';
-
-// export default function App() {
-//   return (
-//     <View style={styles.container}>
-//       <Text>Pool Up </Text>
-//       <StatusBar style="auto" />
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-// });
+export default Index;

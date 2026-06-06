@@ -68,7 +68,7 @@ const Welcome = () => {
 
     //move to the getstarted screen after 5 seconds
     setTimeout(() => {
-      router.push("/(onboarding)/getstarted");
+      router.push("/(auth)/phone");
     }, 5000);
   }, []);
 

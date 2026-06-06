@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1042025826093:android:1d966f3cac8f72fd6135a4",
+        "mobilesdk_app_id": "1:1042025826093:android:568bc5e6047eb2ae6135a4",
         "android_client_info": {
-          "package_name": "com.bismark.poolup"
+          "package_name": "com.bismarkjones.PoolUp"
         }
       },
       "oauth_client": [],
