@@ -1,11 +1,13 @@
 import { Text, TouchableOpacity, View, Animated, Easing } from "react-native";
 import React, { useEffect, useRef } from "react";
 import { Image } from "react-native";
-import { Moon, Users, Hash } from "lucide-react-native";
+import { Moon, Sun, Users, Hash } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { useColorScheme } from "nativewind";
 
 const GetStarted = () => {
   const router = useRouter();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
   // animate each text in the text block
   const anim1 = useRef(new Animated.Value(0)).current;
   const anim2 = useRef(new Animated.Value(0)).current;
@@ -48,7 +50,7 @@ const GetStarted = () => {
   });
 
   return (
-    <View className="flex-1 bg-white p-4">
+    <View className="flex-1 bg-white dark:bg-brand-darkBg p-4">
       <View className="flex-row items-center justify-between px-4 mt-4">
         {/* logo-area */}
         <View className="flex-row items-center gap-2">
@@ -58,19 +60,21 @@ const GetStarted = () => {
             resizeMode="contain"
           />
           <Text
-            className="text-2xl font-bold text-emerald-600"
+            className="text-2xl font-bold text-emerald-600 dark:text-emerald-400"
             style={{ fontFamily: "Nunito_800ExtraBold" }}
           >
             PoolUp
           </Text>
         </View>
         <TouchableOpacity
-          className="bg-green-50 w-14 h-14 rounded-full items-center justify-center"
-          onPress={() => {
-            // TODO: implement dark mode
-          }}
+          className="bg-green-50 dark:bg-brand-darkCard w-14 h-14 rounded-full items-center justify-center"
+          onPress={toggleColorScheme}
         >
-          <Moon color="green" size={20} />
+          {colorScheme === "dark" ? (
+            <Sun color="#F5A623" size={20} />
+          ) : (
+            <Moon color="green" size={20} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -83,7 +87,7 @@ const GetStarted = () => {
 
       <View className="items-center justify-center w-54">
         <Animated.Text
-          className="font-bold"
+          className="font-bold text-gray-800 dark:text-brand-darkTextHigh"
           style={[
             { fontFamily: "Nunito_800ExtraBold", fontSize: 30 },
             animStyle(anim1),
@@ -93,7 +97,7 @@ const GetStarted = () => {
         </Animated.Text>
 
         <Animated.Text
-          className="text-emerald-700 font-bold"
+          className="text-emerald-700 dark:text-emerald-400 font-bold"
           style={[
             { fontFamily: "Nunito_800ExtraBold", fontSize: 30 },
             animStyle(anim2),
@@ -103,7 +107,7 @@ const GetStarted = () => {
         </Animated.Text>
 
         <Animated.Text
-          className="text-center mt-4 w-96 text-emerald-600"
+          className="text-center mt-4 w-96 text-emerald-600 dark:text-brand-darkTextMed"
           style={[
             { fontFamily: "Nunito_400Regular", fontSize: 18 },
             animStyle(anim3),
@@ -117,7 +121,7 @@ const GetStarted = () => {
         {/* Create a group button */}
         <Animated.View style={animStyle(anim4)}>
           <TouchableOpacity
-            className="bg-[#2e8b71] rounded-full py-4 flex-row items-center justify-center gap-3"
+            className="bg-[#2e8b71] dark:bg-brand-greenLight rounded-full py-4 flex-row items-center justify-center gap-3"
             onPress={() => router.push("/(groups)/creategroup")}
           >
             <Users color="white" size={20} />
@@ -133,13 +137,13 @@ const GetStarted = () => {
         {/* Join with a code button */}
         <Animated.View style={animStyle(anim5)}>
           <TouchableOpacity
-            className="border-2 border-[#0d5c45] rounded-full py-4 flex-row items-center justify-center gap-3"
+            className="border-2 border-[#0d5c45] dark:border-emerald-400 rounded-full py-4 flex-row items-center justify-center gap-3"
             onPress={() => router.push("/(onboarding)/join")}
           >
-            <Hash color="#0d5c45" size={20} />
+            <Hash color={colorScheme === "dark" ? "#34d399" : "#0d5c45"} size={20} />
             <Text
               style={{ fontFamily: "Nunito_700Bold" }}
-              className="text-[#0d5c45] text-base"
+              className="text-[#0d5c45] dark:text-emerald-400 text-base"
             >
               Join with a code
             </Text>
@@ -152,14 +156,14 @@ const GetStarted = () => {
         >
           <Text
             style={{ fontFamily: "Nunito_400Regular" }}
-            className="text-[#0d5c45]"
+            className="text-[#0d5c45] dark:text-brand-darkTextMed"
           >
             Already have an account?
           </Text>
           <TouchableOpacity onPress={() => router.push("/(auth)/phone")}>
             <Text
               style={{ fontFamily: "Nunito_700Bold" }}
-              className="text-[#084937] font-bold"
+              className="text-[#084937] dark:text-emerald-400 font-bold"
             >
               Log in
             </Text>

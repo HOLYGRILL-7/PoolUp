@@ -4,6 +4,7 @@ import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
 import { View, ActivityIndicator } from "react-native";
 import { useGroupStore } from "../store/groupstore";
+import { useColorScheme } from "nativewind";
 import "../global.css";
 
 const Index = () => {
@@ -47,11 +48,13 @@ const Index = () => {
     return unsubscribe;
   }, []);
 
+  const { colorScheme } = useColorScheme();
+
   // Still checking Firebase/Firestore — show a spinner
   if (loading || !targetRoute) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#f0f7f4" }}>
-        <ActivityIndicator color="#0d5c45" size="large" />
+      <View className="flex-1 items-center justify-center bg-[#f0f7f4] dark:bg-brand-darkBg">
+        <ActivityIndicator color={colorScheme === "dark" ? "#10b981" : "#0d5c45"} size="large" />
       </View>
     );
   }

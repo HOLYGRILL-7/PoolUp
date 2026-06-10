@@ -9,13 +9,15 @@ import {
 } from "react-native";
 import React, { useRef, useState } from "react";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Hash, Moon } from "lucide-react-native";
+import { ArrowLeft, Hash, Moon, Sun } from "lucide-react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
 import { useGroupStore } from "../../store/groupstore";
+import { useColorScheme } from "nativewind";
 
 const Join = () => {
   const router = useRouter();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -137,7 +139,7 @@ const Join = () => {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-[#f0f7f4]"
+      className="flex-1 bg-[#f0f7f4] dark:bg-brand-darkBg"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View className="flex-1 px-6 pt-14">
@@ -145,20 +147,27 @@ const Join = () => {
         {/* Header — back button and dark mode toggle only */}
         <View className="flex-row items-center justify-between mb-12">
           <TouchableOpacity
-            className="w-12 h-12 rounded-full bg-white items-center justify-center"
+            className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
             onPress={() => router.back()}
           >
-            <ArrowLeft color="#0d5c45" size={20} />
+            <ArrowLeft color={colorScheme === "dark" ? "#a3bdae" : "#0d5c45"} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity className="w-12 h-12 rounded-full bg-green-50 items-center justify-center">
-            <Moon color="green" size={20} />
+          <TouchableOpacity
+            className="w-12 h-12 rounded-full bg-green-50 dark:bg-brand-darkCard items-center justify-center"
+            onPress={toggleColorScheme}
+          >
+            {colorScheme === "dark" ? (
+              <Sun color="#F5A623" size={20} />
+            ) : (
+              <Moon color="green" size={20} />
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Hash icon */}
         <View className="items-center mb-8">
-          <View className="w-24 h-24 rounded-full bg-emerald-100 items-center justify-center">
-            <View className="w-16 h-16 rounded-full bg-[#0d5c45] items-center justify-center">
+          <View className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-950/40 items-center justify-center">
+            <View className="w-16 h-16 rounded-full bg-[#0d5c45] dark:bg-brand-greenLight items-center justify-center">
               <Hash color="white" size={28} />
             </View>
           </View>
@@ -168,13 +177,13 @@ const Join = () => {
         <View className="items-center mb-8">
           <Text
             style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 26 }}
-            className="text-gray-800 text-center"
+            className="text-gray-800 dark:text-brand-darkTextHigh text-center"
           >
             What's your group code?
           </Text>
           <Text
             style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-            className="text-emerald-600 text-center mt-2 w-64"
+            className="text-emerald-600 dark:text-brand-darkTextMed text-center mt-2 w-64"
           >
             Ask your group admin for the 6-digit code.
           </Text>
@@ -195,10 +204,10 @@ const Join = () => {
               maxLength={1}
               editable={!loading}
               style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 24 }}
-              className={`w-14 h-14 rounded-2xl text-center text-[#0d5c45]
+              className={`w-14 h-14 rounded-2xl text-center text-[#0d5c45] dark:text-[#34d399]
                 ${digit
-                  ? "bg-white border-2 border-[#0d5c45]"
-                  : "bg-emerald-50 border-2 border-emerald-100"
+                  ? "bg-white dark:bg-brand-darkInput border-2 border-[#0d5c45] dark:border-brand-darkBorder"
+                  : "bg-emerald-50 dark:bg-brand-darkCard border-2 border-emerald-100 dark:border-brand-darkBorder"
                 }
               `}
             />
@@ -209,7 +218,7 @@ const Join = () => {
         {error ? (
           <Text
             style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-            className="text-red-400 text-center mb-4"
+            className="text-red-400 dark:text-red-300 text-center mb-4"
           >
             {error}
           </Text>
@@ -241,14 +250,14 @@ const Join = () => {
         <View className="flex-row items-center justify-center gap-1">
           <Text
             style={{ fontFamily: "Nunito_400Regular" }}
-            className="text-emerald-600"
+            className="text-emerald-600 dark:text-brand-darkTextMed"
           >
             Don't have a code?
           </Text>
           <TouchableOpacity onPress={() => router.back()}>
             <Text
               style={{ fontFamily: "Nunito_700Bold" }}
-              className="text-[#0d5c45]"
+              className="text-[#0d5c45] dark:text-emerald-400"
             >
               Create a group instead
             </Text>

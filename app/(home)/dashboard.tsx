@@ -11,12 +11,13 @@ import {
   TextInput,
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { Moon, Bell, Users, ShieldCheck, ClipboardList } from "lucide-react-native";
+import { Moon, Sun, Bell, Users, ShieldCheck, ClipboardList } from "lucide-react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
 import { useGroupStore } from "../../store/groupstore";
+import { useColorScheme } from "nativewind";
 
 // Types matching what we store in Firestore
 type Member = {
@@ -46,6 +47,7 @@ const CircularProgress = ({
 }: {
   percentage: number; saved: number; goal: number;
 }) => {
+  const { colorScheme } = useColorScheme();
   const size = 220;
   const strokeWidth = 16;
   const radius = (size - strokeWidth) / 2;
@@ -55,10 +57,10 @@ const CircularProgress = ({
   return (
     <View className="items-center justify-center my-6">
       <Svg width={size} height={size}>
-        <Circle cx={size / 2} cy={size / 2} r={radius} stroke="#d1fae5" strokeWidth={strokeWidth} fill="transparent" />
+        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colorScheme === "dark" ? "#1b2e27" : "#d1fae5"} strokeWidth={strokeWidth} fill="transparent" />
         <Circle
           cx={size / 2} cy={size / 2} r={radius}
-          stroke="#0d5c45" strokeWidth={strokeWidth} fill="transparent"
+          stroke={colorScheme === "dark" ? "#10b981" : "#0d5c45"} strokeWidth={strokeWidth} fill="transparent"
           strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
           strokeLinecap="round" rotation="-90" origin={`${size / 2}, ${size / 2}`}
         />
@@ -69,19 +71,20 @@ const CircularProgress = ({
         />
       </Svg>
       <View className="absolute items-center">
-        <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 42 }} className="text-gray-800">{percentage}%</Text>
-        <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-gray-500">of goal reached</Text>
-        <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 20 }} className="text-[#0d5c45] mt-1">GHS {saved.toLocaleString()}</Text>
-        <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-gray-400">/ GHS {goal.toLocaleString()}</Text>
+        <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 42 }} className="text-gray-800 dark:text-brand-darkTextHigh">{percentage}%</Text>
+        <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-gray-500 dark:text-brand-darkTextLow">of goal reached</Text>
+        <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 20 }} className="text-[#0d5c45] dark:text-emerald-400 mt-1">GHS {saved.toLocaleString()}</Text>
+        <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-gray-400 dark:text-brand-darkTextLow">/ GHS {goal.toLocaleString()}</Text>
       </View>
     </View>
   );
 };
 
-const statusColor = (status: string) => {
-  if (status === "paid") return "#22c55e";
+const statusColor = (status: string, colorScheme?: string) => {
+  const isDark = colorScheme === "dark";
+  if (status === "paid") return isDark ? "#4ade80" : "#22c55e";
   if (status === "pending") return "#F5A623";
-  return "#ef4444";
+  return isDark ? "#fca5a5" : "#ef4444";
 };
 
 const FlipCard = ({
@@ -95,6 +98,7 @@ const FlipCard = ({
   hasPaid: boolean;
   onMarkAsPaid: () => void;
 }) => {
+  const { colorScheme } = useColorScheme();
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
   const swipeStartX = useRef(0);
@@ -133,27 +137,27 @@ const FlipCard = ({
 
   return (
     <View style={{ height: 200, marginBottom: 8 }} {...panResponder.panHandlers}>
-      <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }} className="text-gray-400 text-center mb-2">
+      <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }} className="text-gray-400 dark:text-brand-darkTextLow text-center mb-2">
         {isFlipped ? "swipe right to go back →" : "← swipe left for your card"}
       </Text>
 
       {/* FRONT — group overview */}
       <Animated.View style={{ position: "absolute", top: 24, width: "100%", transform: [{ rotateY: frontRotate }], opacity: frontOpacity }}>
-        <View className="bg-[#0d5c45] rounded-3xl px-6 py-6">
-          <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 13 }} className="text-white/60 mb-3">Group Overview</Text>
+        <View className="bg-[#0d5c45] dark:bg-brand-darkCard rounded-3xl px-6 py-6 border border-transparent dark:border-brand-darkBorder">
+          <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 13 }} className="text-white/60 dark:text-[#a3bdae] mb-3">Group Overview</Text>
           <View className="flex-row justify-between mb-3">
-            <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-white/70">Goal</Text>
-            <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }} className="text-white">GHS {group.savingsGoal.toLocaleString()}</Text>
+            <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-white/70 dark:text-brand-darkTextMed">Goal</Text>
+            <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }} className="text-white dark:text-brand-darkTextHigh">GHS {group.savingsGoal.toLocaleString()}</Text>
           </View>
-          <View className="h-px bg-white/20 mb-3" />
+          <View className="h-px bg-white/20 dark:bg-brand-darkBorder mb-3" />
           <View className="flex-row justify-between mb-3">
-            <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-white/70">Collected</Text>
-            <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }} className="text-white">GHS {group.totalSaved.toLocaleString()}</Text>
+            <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-white/70 dark:text-brand-darkTextMed">Collected</Text>
+            <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }} className="text-white dark:text-brand-darkTextHigh">GHS {group.totalSaved.toLocaleString()}</Text>
           </View>
-          <View className="h-px bg-white/20 mb-3" />
+          <View className="h-px bg-white/20 dark:bg-brand-darkBorder mb-3" />
           <View className="flex-row justify-between">
-            <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-white/70">This month</Text>
-            <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }} className="text-white">{paidCount}/{group.members.length} paid</Text>
+            <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-white/70 dark:text-brand-darkTextMed">This month</Text>
+            <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }} className="text-white dark:text-brand-darkTextHigh">{paidCount}/{group.members.length} paid</Text>
           </View>
         </View>
       </Animated.View>
@@ -184,6 +188,7 @@ const FlipCard = ({
 
 const Dashboard = () => {
   const router = useRouter();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -322,9 +327,9 @@ const Dashboard = () => {
 
   if (loading || !group) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#f0f7f4]">
-        <ActivityIndicator color="#0d5c45" size="large" />
-        <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-emerald-600 mt-3">
+      <View className="flex-1 items-center justify-center bg-[#f0f7f4] dark:bg-brand-darkBg">
+        <ActivityIndicator color={colorScheme === "dark" ? "#10b981" : "#0d5c45"} size="large" />
+        <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }} className="text-emerald-600 dark:text-brand-darkTextMed mt-3">
           Loading your group...
         </Text>
       </View>
@@ -343,33 +348,33 @@ const Dashboard = () => {
   const hasPaid = myMemberObject?.status === "paid";
 
   return (
-    <View className="flex-1 bg-[#f0f7f4]">
+    <View className="flex-1 bg-[#f0f7f4] dark:bg-brand-darkBg">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-6 pt-12 pb-10">
 
           {/* Header */}
           <View className="flex-row items-start justify-between mb-2">
             <View className="flex-1">
-              <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 26 }} className="text-gray-800">
+              <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 26 }} className="text-gray-800 dark:text-brand-darkTextHigh">
                 {group.name}
               </Text>
               <View className="flex-row flex-wrap gap-2 mt-2">
-                <View className="bg-emerald-100 rounded-full px-3 py-1 flex-row items-center gap-2">
-                  <Users color="#0d5c45" size={13} />
-                  <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 13 }} className="text-[#0d5c45]">
+                <View className="bg-emerald-100 dark:bg-brand-darkCard rounded-full px-3 py-1 flex-row items-center gap-2 border border-transparent dark:border-brand-darkBorder">
+                  <Users color={colorScheme === "dark" ? "#34d399" : "#0d5c45"} size={13} />
+                  <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 13 }} className="text-[#0d5c45] dark:text-emerald-400">
                     {group.members.length} members
                   </Text>
                 </View>
                 {isAdmin && (
-                  <View className="bg-emerald-100 rounded-full px-3 py-1 flex-row items-center gap-2">
-                    <ShieldCheck color="#0d5c45" size={13} />
-                    <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 13 }} className="text-[#0d5c45]">Admin</Text>
+                  <View className="bg-emerald-100 dark:bg-brand-darkCard rounded-full px-3 py-1 flex-row items-center gap-2 border border-transparent dark:border-brand-darkBorder">
+                    <ShieldCheck color={colorScheme === "dark" ? "#34d399" : "#0d5c45"} size={13} />
+                    <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 13 }} className="text-[#0d5c45] dark:text-emerald-400">Admin</Text>
                   </View>
                 )}
                 {isAdmin && (
                   <TouchableOpacity
                     onPress={() => router.push("/(home)/paymenthistory")}
-                    className="bg-[#0d5c45] rounded-full px-3 py-1 flex-row items-center gap-2"
+                    className="bg-[#0d5c45] dark:bg-brand-greenLight rounded-full px-3 py-1 flex-row items-center gap-2"
                   >
                     <ClipboardList color="white" size={13} />
                     <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 13 }} className="text-white">Records</Text>
@@ -377,8 +382,15 @@ const Dashboard = () => {
                 )}
               </View>
             </View>
-            <TouchableOpacity className="w-12 h-12 rounded-full bg-white items-center justify-center">
-              <Moon color="#0d5c45" size={20} />
+            <TouchableOpacity
+              onPress={toggleColorScheme}
+              className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center border border-transparent dark:border-brand-darkBorder"
+            >
+              {colorScheme === "dark" ? (
+                <Sun color="#F5A623" size={20} />
+              ) : (
+                <Moon color="#0d5c45" size={20} />
+              )}
             </TouchableOpacity>
           </View>
 
@@ -424,8 +436,8 @@ const Dashboard = () => {
           {isAdmin && (
             <>
               <View className="flex-row items-center justify-between mb-4">
-                <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 18 }} className="text-gray-800">This month</Text>
-                <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 14 }} className="text-[#0d5c45]">
+                <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 18 }} className="text-gray-800 dark:text-brand-darkTextHigh">This month</Text>
+                <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 14 }} className="text-[#0d5c45] dark:text-emerald-400">
                   {paidCount}/{group.members.length} paid
                 </Text>
               </View>
@@ -436,23 +448,23 @@ const Dashboard = () => {
                   {group.members.map((member) => (
                     <View key={member.uid} className="items-center">
                       <View className="relative">
-                        <View className="w-14 h-14 rounded-full bg-emerald-200 items-center justify-center">
-                          <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }} className="text-[#0d5c45]">
+                        <View className="w-14 h-14 rounded-full bg-emerald-200 dark:bg-emerald-950/40 items-center justify-center">
+                          <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }} className="text-[#0d5c45] dark:text-emerald-400">
                             {(member.name || member.phone || "?").charAt(0).toUpperCase()}
                           </Text>
                         </View>
                         <View style={{
                           position: "absolute", bottom: 0, right: 0,
                           width: 16, height: 16, borderRadius: 8,
-                          backgroundColor: statusColor(member.status || "pending"),
-                          borderWidth: 2, borderColor: "#f0f7f4",
+                          backgroundColor: statusColor(member.status || "pending", colorScheme),
+                          borderWidth: 2, borderColor: colorScheme === "dark" ? "#121e1a" : "#f0f7f4",
                           alignItems: "center", justifyContent: "center",
                         }}>
                           {member.status === "paid" && <Text style={{ fontSize: 8, color: "white" }}>✓</Text>}
                           {member.status === "missed" && <Text style={{ fontSize: 8, color: "white" }}>✕</Text>}
                         </View>
                       </View>
-                      <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }} className="text-gray-600 mt-1">
+                      <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }} className="text-gray-600 dark:text-brand-darkTextMed mt-1">
                         {(member.name || member.phone || "?").split(" ")[0]}
                       </Text>
                     </View>
@@ -461,14 +473,14 @@ const Dashboard = () => {
               </ScrollView>
 
               {/* Due date card */}
-              <View className="bg-amber-50 rounded-2xl px-4 py-4 flex-row items-center justify-between mb-6">
+              <View className="bg-amber-50 dark:bg-brand-darkCard rounded-2xl px-4 py-4 flex-row items-center justify-between mb-6 border border-transparent dark:border-brand-darkBorder">
                 <View className="flex-row items-center gap-3">
                   <View className="w-12 h-12 rounded-full bg-[#F5A623] items-center justify-center">
                     <Bell color="white" size={20} />
                   </View>
                   <View>
-                    <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }} className="text-gray-800">Next due date</Text>
-                    <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-[#0d5c45]">
+                    <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }} className="text-gray-800 dark:text-brand-darkTextHigh">Next due date</Text>
+                    <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-[#0d5c45] dark:text-emerald-400">
                       {group.nextDueDate} — {group.daysLeft} days left
                     </Text>
                   </View>
@@ -480,24 +492,24 @@ const Dashboard = () => {
 
               {/* Paid / pending / missed summary */}
               <View className="flex-row gap-3 mb-6">
-                <View className="flex-1 bg-emerald-50 rounded-2xl py-4 items-center">
-                  <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 28 }} className="text-emerald-500">{paidCount}</Text>
-                  <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-gray-500 mt-1">Paid</Text>
+                <View className="flex-1 bg-emerald-50 dark:bg-brand-darkCard rounded-2xl py-4 items-center border border-transparent dark:border-brand-darkBorder">
+                  <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 28 }} className="text-emerald-500 dark:text-emerald-400">{paidCount}</Text>
+                  <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-gray-500 dark:text-brand-darkTextLow mt-1">Paid</Text>
                 </View>
-                <View className="flex-1 bg-amber-50 rounded-2xl py-4 items-center">
+                <View className="flex-1 bg-amber-50 dark:bg-brand-darkCard rounded-2xl py-4 items-center border border-transparent dark:border-brand-darkBorder">
                   <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 28 }} className="text-[#F5A623]">{pendingCount}</Text>
-                  <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-gray-500 mt-1">Pending</Text>
+                  <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-gray-500 dark:text-brand-darkTextLow mt-1">Pending</Text>
                 </View>
-                <View className="flex-1 bg-red-50 rounded-2xl py-4 items-center">
-                  <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 28 }} className="text-red-400">{missedCount}</Text>
-                  <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-gray-500 mt-1">Missed</Text>
+                <View className="flex-1 bg-red-50 dark:bg-brand-darkCard rounded-2xl py-4 items-center border border-transparent dark:border-brand-darkBorder">
+                  <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 28 }} className="text-red-400 dark:text-red-300">{missedCount}</Text>
+                  <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-gray-500 dark:text-brand-darkTextLow mt-1">Missed</Text>
                 </View>
               </View>
 
               {/* Nudge button */}
               <TouchableOpacity
                 onPress={handleNudge}
-                className="bg-[#0d5c45] rounded-full py-4 flex-row items-center justify-center gap-3 mb-4"
+                className="bg-[#0d5c45] dark:bg-brand-greenLight rounded-full py-4 flex-row items-center justify-center gap-3 mb-4"
               >
                 <Bell color="white" size={20} />
                 <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }} className="text-white">
@@ -511,8 +523,8 @@ const Dashboard = () => {
           {!isAdmin && (
             <>
               <View className="flex-row items-center justify-between mb-4">
-                <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 18 }} className="text-gray-800">Pool members</Text>
-                <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 14 }} className="text-[#0d5c45]">
+                <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 18 }} className="text-gray-800 dark:text-brand-darkTextHigh">Pool members</Text>
+                <Text style={{ fontFamily: "Nunito_600SemiBold", fontSize: 14 }} className="text-[#0d5c45] dark:text-emerald-400">
                   {paidCount}/{group.members.length} paid
                 </Text>
               </View>
@@ -520,16 +532,16 @@ const Dashboard = () => {
                 <View className="flex-row gap-4">
                   {group.members.map((member) => (
                     <View key={member.uid} className="relative">
-                      <View className="w-14 h-14 rounded-full bg-emerald-200 items-center justify-center">
-                        <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }} className="text-[#0d5c45]">
+                      <View className="w-14 h-14 rounded-full bg-emerald-200 dark:bg-emerald-950/40 items-center justify-center">
+                        <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }} className="text-[#0d5c45] dark:text-emerald-400">
                           {(member.name || member.phone || "?").charAt(0).toUpperCase()}
                         </Text>
                       </View>
                       <View style={{
                         position: "absolute", bottom: 0, right: 0,
                         width: 14, height: 14, borderRadius: 7,
-                        backgroundColor: statusColor(member.status || "pending"),
-                        borderWidth: 2, borderColor: "#f0f7f4",
+                        backgroundColor: statusColor(member.status || "pending", colorScheme),
+                        borderWidth: 2, borderColor: colorScheme === "dark" ? "#121e1a" : "#f0f7f4",
                       }} />
                     </View>
                   ))}
@@ -555,30 +567,30 @@ const Dashboard = () => {
         }}
       >
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.6)" }} className="px-6">
-          <View className="bg-white rounded-3xl w-full p-6 shadow-xl">
-            <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 22 }} className="text-gray-800 text-center mb-2">
+          <View className="bg-white dark:bg-brand-darkCard rounded-3xl w-full p-6 shadow-xl border border-transparent dark:border-brand-darkBorder">
+            <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 22 }} className="text-gray-800 dark:text-brand-darkTextHigh text-center mb-2">
               Confirm Contribution
             </Text>
-            <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 15 }} className="text-gray-500 text-center mb-6">
-              You are paying <Text style={{ fontFamily: "Nunito_700Bold" }} className="text-[#0d5c45]">GHS {group.myContribution}</Text>. Please input your Mobile Money transaction reference number to verify.
+            <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 15 }} className="text-gray-500 dark:text-brand-darkTextMed text-center mb-6">
+              You are paying <Text style={{ fontFamily: "Nunito_700Bold" }} className="text-[#0d5c45] dark:text-emerald-400">GHS {group.myContribution}</Text>. Please input your Mobile Money transaction reference number to verify.
             </Text>
 
-            <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }} className="text-gray-700 mb-2">
+            <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }} className="text-gray-700 dark:text-brand-darkTextHigh mb-2">
               Transaction ID / Ref
             </Text>
             <TextInput
               value={momoRef}
               onChangeText={(t) => { setMomoRef(t); setPaymentError(""); }}
               placeholder="e.g. 2938210382"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"}
               keyboardType="default"
               editable={!submittingPayment}
               style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-              className={`bg-gray-50 rounded-2xl px-4 py-4 mb-4 text-gray-800 border ${paymentError ? "border-red-400" : "border-gray-100"}`}
+              className={`bg-gray-50 dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-4 text-gray-800 dark:text-brand-darkTextHigh border ${paymentError ? "border-red-400" : "border-gray-100 dark:border-brand-darkBorder"}`}
             />
 
             {paymentError ? (
-              <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-red-400 mb-4 ml-1">
+              <Text style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }} className="text-red-400 dark:text-red-300 mb-4 ml-1">
                 {paymentError}
               </Text>
             ) : null}
@@ -587,16 +599,16 @@ const Dashboard = () => {
               <TouchableOpacity
                 disabled={submittingPayment}
                 onPress={() => { setIsPaymentModalVisible(false); setMomoRef(""); setPaymentError(""); }}
-                className="flex-1 bg-gray-100 rounded-full py-4 items-center"
+                className="flex-1 bg-gray-100 dark:bg-brand-darkInput rounded-full py-4 items-center border border-transparent dark:border-brand-darkBorder"
               >
-                <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 16 }} className="text-gray-500">
+                <Text style={{ fontFamily: "Nunito_700Bold", fontSize: 16 }} className="text-gray-500 dark:text-brand-darkTextMed">
                   Cancel
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 disabled={submittingPayment || !momoRef.trim()}
                 onPress={handleMarkAsPaid}
-                className={`flex-1 rounded-full py-4 items-center justify-center ${momoRef.trim() && !submittingPayment ? "bg-[#0d5c45]" : "bg-[#0d5c45]/40"}`}
+                className={`flex-1 rounded-full py-4 items-center justify-center ${momoRef.trim() && !submittingPayment ? "bg-[#0d5c45] dark:bg-brand-greenLight" : "bg-[#0d5c45]/40 dark:bg-brand-greenLight/30"}`}
               >
                 {submittingPayment ? (
                   <ActivityIndicator color="white" size="small" />

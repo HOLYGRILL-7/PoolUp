@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
-import { Moon } from "lucide-react-native";
+import { Moon, Sun } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 
 
 // the floating bubbles for the background
@@ -27,6 +28,7 @@ const BUBBLES = [
 const Welcome = () => {
   const router = useRouter(); // use router helps in my navigation to the next screen
   const { height } = useWindowDimensions(); //use window dimensions helps to get the height and width of the screen
+  const { colorScheme, toggleColorScheme } = useColorScheme();
 
   const logoPosition = useRef(new Animated.Value(0)).current; //use ref helps to keep the value of the variable 
   const contentOpacity = useRef(new Animated.Value(0)).current;
@@ -73,7 +75,7 @@ const Welcome = () => {
   }, []);
 
   return (
-    <View className="flex-1 bg-[#0d5c45]">
+    <View className="flex-1 bg-[#0d5c45] dark:bg-brand-darkBg">
       {/* Bottom dark overlay */}
       <View
         style={{
@@ -82,7 +84,7 @@ const Welcome = () => {
           left: 0,
           right: 0,
           height: "100%",
-          backgroundColor: "rgba(5, 30, 20, 0.4)",
+          backgroundColor: colorScheme === "dark" ? "rgba(9, 15, 13, 0.6)" : "rgba(5, 30, 20, 0.4)",
         }}
       />
 
@@ -117,15 +119,16 @@ const Welcome = () => {
       </Animated.View>
 
       {/* Dark mode toggle — top right */}
-      {/* TODO: wire up dark mode toggle */}
      <TouchableOpacity
-          className="bg-white/40 w-14 h-14 rounded-full items-center justify-center"
+          className="bg-white/20 dark:bg-brand-darkCard/40 w-14 h-14 rounded-full items-center justify-center"
           style={{ position: "absolute", top: 48, right: 24 }}
-          onPress={() => {
-            // TODO: implement dark mode
-          }}
+          onPress={toggleColorScheme}
         >
-          <Moon color="white" size={20} />
+          {colorScheme === "dark" ? (
+            <Sun color="#F5A623" size={20} />
+          ) : (
+            <Moon color="white" size={20} />
+          )}
         </TouchableOpacity>
 
       {/* Logo block — slides up */}

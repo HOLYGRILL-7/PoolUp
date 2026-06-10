@@ -10,14 +10,16 @@ import {
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Moon, User } from "lucide-react-native";
+import { ArrowLeft, Moon, Sun, User } from "lucide-react-native";
 import auth from "@react-native-firebase/auth";
 import { useAuthStore } from "../../store/authstore";
+import { useColorScheme } from "nativewind";
 
 const RESEND_COUNTDOWN = 30;
 
 const VerifyScreen = () => {
   const router = useRouter();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -169,22 +171,29 @@ const VerifyScreen = () => {
   if (showNameStep) {
     return (
       <KeyboardAvoidingView
-        className="flex-1 bg-[#f0f7f4]"
+        className="flex-1 bg-[#f0f7f4] dark:bg-brand-darkBg"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View className="flex-1 px-6 pt-12 pb-10">
           {/* Header */}
           <View className="flex-row items-center justify-between mb-12">
             <View className="w-12 h-12" />
-            <TouchableOpacity className="w-12 h-12 rounded-full bg-white items-center justify-center">
-              <Moon color="#0d5c45" size={20} />
+            <TouchableOpacity
+              className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
+              onPress={toggleColorScheme}
+            >
+              {colorScheme === "dark" ? (
+                <Sun color="#F5A623" size={20} />
+              ) : (
+                <Moon color="#0d5c45" size={20} />
+              )}
             </TouchableOpacity>
           </View>
 
           {/* Icon */}
           <View className="items-center mb-8">
-            <View className="w-24 h-24 rounded-full bg-emerald-100 items-center justify-center">
-              <View className="w-16 h-16 rounded-full bg-[#0d5c45] items-center justify-center">
+            <View className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-950/40 items-center justify-center">
+              <View className="w-16 h-16 rounded-full bg-[#0d5c45] dark:bg-brand-greenLight items-center justify-center">
                 <User color="white" size={28} />
               </View>
             </View>
@@ -194,13 +203,13 @@ const VerifyScreen = () => {
           <View className="items-center mb-10">
             <Text
               style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 26 }}
-              className="text-gray-800 text-center"
+              className="text-gray-800 dark:text-brand-darkTextHigh text-center"
             >
               What should we call you?
             </Text>
             <Text
               style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-              className="text-emerald-600 text-center mt-2 w-72"
+              className="text-emerald-600 dark:text-brand-darkTextMed text-center mt-2 w-72"
             >
               Your group members will see this name.
             </Text>
@@ -210,7 +219,7 @@ const VerifyScreen = () => {
           <View className="mb-2">
             <Text
               style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-              className="text-gray-700 mb-2"
+              className="text-gray-700 dark:text-brand-darkTextMed mb-2"
             >
               Your name
             </Text>
@@ -218,11 +227,11 @@ const VerifyScreen = () => {
               value={displayName}
               onChangeText={(t) => { setDisplayName(t); setNameError(""); }}
               placeholder="e.g. Akosua Mensah"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"}
               autoFocus
               style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-              className={`bg-white rounded-2xl px-4 py-4 text-gray-800
-                ${nameError ? "border-2 border-red-400" : "border-2 border-transparent"}
+              className={`bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 text-gray-800 dark:text-brand-darkTextHigh border-2
+                ${nameError ? "border-red-400" : "border-transparent dark:border-brand-darkBorder"}
               `}
             />
             {nameError ? (
@@ -242,7 +251,7 @@ const VerifyScreen = () => {
             onPress={handleSaveName}
             disabled={!displayName.trim() || nameLoading}
             className={`rounded-full py-4 items-center justify-center
-              ${displayName.trim() && !nameLoading ? "bg-[#0d5c45]" : "bg-[#0d5c45]/40"}
+              ${displayName.trim() && !nameLoading ? "bg-[#0d5c45] dark:bg-brand-greenLight" : "bg-[#0d5c45]/40 dark:bg-brand-greenLight/30"}
             `}
           >
             {nameLoading ? (
@@ -264,7 +273,7 @@ const VerifyScreen = () => {
   // ── OTP step (default) ────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-[#f0f7f4]"
+      className="flex-1 bg-[#f0f7f4] dark:bg-brand-darkBg"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View className="flex-1 px-6 pt-12 pb-10">
@@ -272,13 +281,20 @@ const VerifyScreen = () => {
         {/* Header */}
         <View className="flex-row items-center justify-between mb-12">
           <TouchableOpacity
-            className="w-12 h-12 rounded-full bg-white items-center justify-center"
+            className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
             onPress={() => router.back()}
           >
-            <ArrowLeft color="#0d5c45" size={20} />
+            <ArrowLeft color={colorScheme === "dark" ? "#a3bdae" : "#0d5c45"} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity className="w-12 h-12 rounded-full bg-white items-center justify-center">
-            <Moon color="#0d5c45" size={20} />
+          <TouchableOpacity
+            className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
+            onPress={toggleColorScheme}
+          >
+            {colorScheme === "dark" ? (
+              <Sun color="#F5A623" size={20} />
+            ) : (
+              <Moon color="#0d5c45" size={20} />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -286,13 +302,13 @@ const VerifyScreen = () => {
         <View className="items-center mb-10">
           <Text
             style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 26 }}
-            className="text-gray-800 text-center"
+            className="text-gray-800 dark:text-brand-darkTextHigh text-center"
           >
             Enter the code
           </Text>
           <Text
             style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-            className="text-emerald-600 text-center mt-2 w-72"
+            className="text-emerald-600 dark:text-brand-darkTextMed text-center mt-2 w-72"
           >
             We sent a 6-digit code to your number. It expires in 10 minutes.
           </Text>
@@ -320,10 +336,18 @@ const VerifyScreen = () => {
                 height: 60,
                 borderRadius: 16,
                 textAlign: "center",
-                backgroundColor: error ? "#fef2f2" : digit ? "white" : "#ecfdf5",
+                backgroundColor: error 
+                  ? (colorScheme === 'dark' ? '#450a0a' : '#fef2f2') 
+                  : digit 
+                    ? (colorScheme === 'dark' ? '#233a32' : 'white') 
+                    : (colorScheme === 'dark' ? '#1b2e27' : '#ecfdf5'),
                 borderWidth: 2,
-                borderColor: error ? "#f87171" : digit ? "#0d5c45" : "#d1fae5",
-                color: "#1f2937",
+                borderColor: error 
+                  ? (colorScheme === 'dark' ? '#ef4444' : '#f87171') 
+                  : digit 
+                    ? (colorScheme === 'dark' ? '#10b981' : '#0d5c45') 
+                    : (colorScheme === 'dark' ? '#2c473d' : '#d1fae5'),
+                color: colorScheme === 'dark' ? '#f2f6f4' : '#1f2937',
               }}
             />
           ))}
@@ -333,7 +357,7 @@ const VerifyScreen = () => {
         {error ? (
           <Text
             style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-            className="text-red-400 text-center mb-4"
+            className="text-red-400 dark:text-red-300 text-center mb-4"
           >
             {error}
           </Text>
@@ -344,10 +368,10 @@ const VerifyScreen = () => {
         {/* Loading indicator */}
         {loading && (
           <View className="items-center mb-6">
-            <ActivityIndicator color="#0d5c45" size="large" />
+            <ActivityIndicator color={colorScheme === "dark" ? "#10b981" : "#0d5c45"} size="large" />
             <Text
               style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-              className="text-emerald-600 mt-2"
+              className="text-emerald-600 dark:text-brand-darkTextMed mt-2"
             >
               Verifying...
             </Text>
@@ -360,7 +384,7 @@ const VerifyScreen = () => {
             onPress={() => handleVerify()}
             disabled={!isComplete}
             className={`rounded-full py-4 items-center justify-center mb-8
-              ${isComplete ? "bg-[#0d5c45]" : "bg-[#0d5c45]/40"}
+              ${isComplete ? "bg-[#0d5c45] dark:bg-brand-greenLight" : "bg-[#0d5c45]/40 dark:bg-brand-greenLight/30"}
             `}
           >
             <Text
@@ -378,7 +402,7 @@ const VerifyScreen = () => {
             <TouchableOpacity onPress={handleResend}>
               <Text
                 style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-                className="text-[#0d5c45]"
+                className="text-[#0d5c45] dark:text-emerald-400"
               >
                 Resend code
               </Text>
@@ -386,10 +410,10 @@ const VerifyScreen = () => {
           ) : (
             <Text
               style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-              className="text-gray-400"
+              className="text-gray-400 dark:text-brand-darkTextLow"
             >
               Resend code in{" "}
-              <Text style={{ fontFamily: "Nunito_700Bold" }} className="text-[#0d5c45]">
+              <Text style={{ fontFamily: "Nunito_700Bold" }} className="text-[#0d5c45] dark:text-emerald-400">
                 {countdown}s
               </Text>
             </Text>

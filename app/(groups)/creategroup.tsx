@@ -8,11 +8,12 @@ import {
 } from "react-native";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Moon, Calendar } from "lucide-react-native";
+import { ArrowLeft, Moon, Sun, Calendar } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
 import { useGroupStore } from "../../store/groupstore";
+import { useColorScheme } from "nativewind";
 
 // Calculates the first due date based on the group's start date and frequency.
 // For Monthly groups, the due date is the same day next month.
@@ -36,6 +37,7 @@ const generateCode = () =>
 
 const CreateGroup = () => {
   const router = useRouter();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
   const [loading, setLoading] = useState(false);
   const setGroup = useGroupStore((state) => state.setGroup);
 
@@ -137,7 +139,7 @@ const CreateGroup = () => {
 
   return (
     <ScrollView
-      className="flex-1 bg-[#f0f7f4]"
+      className="flex-1 bg-[#f0f7f4] dark:bg-brand-darkBg"
       keyboardShouldPersistTaps="handled"
     >
       <View className="px-6 pt-12 pb-10">
@@ -145,33 +147,39 @@ const CreateGroup = () => {
         <View className="flex-row items-center justify-between mb-8">
           <View className="flex-row items-center gap-3">
             <TouchableOpacity
-              className="w-12 h-12 rounded-full bg-white items-center justify-center"
+              className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
               onPress={() => router.back()}
             >
-              <ArrowLeft color="#0d5c45" size={20} />
+              <ArrowLeft color={colorScheme === "dark" ? "#a3bdae" : "#0d5c45"} size={20} />
             </TouchableOpacity>
             <Text
               style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 22 }}
-              className="text-gray-800"
+              className="text-gray-800 dark:text-brand-darkTextHigh"
             >
               Create a Group
             </Text>
           </View>
-          {/* TODO: wire up dark mode */}
-          <TouchableOpacity className="w-12 h-12 rounded-full bg-white items-center justify-center">
-            <Moon color="#0d5c45" size={20} />
+          <TouchableOpacity
+            className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
+            onPress={toggleColorScheme}
+          >
+            {colorScheme === "dark" ? (
+              <Sun color="#F5A623" size={20} />
+            ) : (
+              <Moon color="#0d5c45" size={20} />
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Step indicator */}
         <View className="items-center mb-8">
           <View className="flex-row gap-2 mb-2">
-            <View className="w-8 h-2 rounded-full bg-[#0d5c45]" />
-            <View className="w-8 h-2 rounded-full bg-emerald-200" />
+            <View className="w-8 h-2 rounded-full bg-[#0d5c45] dark:bg-brand-greenLight" />
+            <View className="w-8 h-2 rounded-full bg-emerald-200 dark:bg-emerald-950" />
           </View>
           <Text
             style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-            className="text-emerald-600"
+            className="text-emerald-600 dark:text-brand-darkTextMed"
           >
             Step 1 of 2 — Group Setup
           </Text>
@@ -180,7 +188,7 @@ const CreateGroup = () => {
         {/* Group name */}
         <Text
           style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 mb-2"
+          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
         >
           Group name
         </Text>
@@ -188,22 +196,22 @@ const CreateGroup = () => {
           value={groupName}
           onChangeText={setGroupName}
           placeholder="Jones Family Fund"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"}
           style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-          className="bg-white rounded-2xl px-4 py-4 mb-6 text-gray-800"
+          className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 text-gray-800 dark:text-brand-darkTextHigh border-2 border-transparent dark:border-brand-darkBorder"
         />
 
         {/* Savings goal */}
         <Text
           style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 mb-2"
+          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
         >
           Savings goal
         </Text>
-        <View className="bg-white rounded-2xl px-4 py-4 mb-6 flex-row items-center">
+        <View className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 flex-row items-center border-2 border-transparent dark:border-brand-darkBorder">
           <Text
             style={{ fontFamily: "Nunito_700Bold", fontSize: 16 }}
-            className="text-emerald-500 mr-2"
+            className="text-emerald-500 dark:text-[#34d399] mr-2"
           >
             GHS
           </Text>
@@ -211,33 +219,33 @@ const CreateGroup = () => {
             value={savingsGoal}
             onChangeText={setSavingsGoal}
             placeholder="5,000"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"}
             keyboardType="numeric"
             style={{ fontFamily: "Nunito_400Regular", fontSize: 16, flex: 1 }}
-            className="text-gray-800"
+            className="text-gray-800 dark:text-brand-darkTextHigh"
           />
         </View>
 
         {/* Contribution frequency */}
         <Text
           style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 mb-2"
+          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
         >
           Contribution frequency
         </Text>
-        <View className="bg-emerald-100 rounded-full flex-row p-1 mb-6">
+        <View className="bg-emerald-100 dark:bg-brand-darkCard rounded-full flex-row p-1 mb-6">
           {(["Weekly", "Monthly"] as const).map((option) => (
             <TouchableOpacity
               key={option}
               onPress={() => setFrequency(option)}
               className={`flex-1 py-3 rounded-full items-center
-                ${frequency === option ? "bg-[#0d5c45]" : ""}
+                ${frequency === option ? "bg-[#0d5c45] dark:bg-brand-greenLight" : ""}
               `}
             >
               <Text
                 style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
                 className={
-                  frequency === option ? "text-white" : "text-emerald-700"
+                  frequency === option ? "text-white" : "text-emerald-700 dark:text-brand-darkTextMed"
                 }
               >
                 {option}
@@ -249,21 +257,21 @@ const CreateGroup = () => {
         {/* Start date */}
         <Text
           style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 mb-2"
+          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
         >
           Start date
         </Text>
         <TouchableOpacity
           onPress={() => setShowDatePicker(true)}
-          className="bg-white rounded-2xl px-4 py-4 mb-6 flex-row items-center justify-between"
+          className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 flex-row items-center justify-between border-2 border-transparent dark:border-brand-darkBorder"
         >
           <Text
             style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-            className="text-gray-800"
+            className="text-gray-800 dark:text-brand-darkTextHigh"
           >
             {formatDate(startDate)}
           </Text>
-          <Calendar color="#0d5c45" size={20} />
+          <Calendar color={colorScheme === "dark" ? "#34d399" : "#0d5c45"} size={20} />
         </TouchableOpacity>
 
         {showDatePicker && (
@@ -278,78 +286,78 @@ const CreateGroup = () => {
 
         {/* Live Preview */}
         <View className="rounded-2xl overflow-hidden mb-8">
-          <View className="bg-[#0d5c45] px-4 py-4 flex-row items-center justify-between">
+          <View className="bg-[#0d5c45] dark:bg-brand-greenLight px-4 py-4 flex-row items-center justify-between">
             <Text
               style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
               className="text-white"
             >
               Live Preview
             </Text>
-            <View className="w-6 h-6 rounded-full bg-white" />
+            <View className="w-6 h-6 rounded-full bg-white dark:bg-brand-darkBg" />
           </View>
 
-          <View className="bg-white px-4 py-4 gap-3">
+          <View className="bg-white dark:bg-brand-darkCard px-4 py-4 gap-3 border-x-2 border-b-2 border-transparent dark:border-brand-darkBorder rounded-b-2xl">
             <View className="flex-row justify-between items-center">
               <Text
                 style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-                className="text-emerald-500"
+                className="text-emerald-500 dark:text-brand-darkTextLow"
               >
                 Group
               </Text>
               <Text
                 style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-                className="text-gray-800"
+                className="text-gray-800 dark:text-brand-darkTextHigh"
               >
                 {groupName || "—"}
               </Text>
             </View>
 
-            <View className="h-px bg-gray-100" />
+            <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
 
             <View className="flex-row justify-between items-center">
               <Text
                 style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-                className="text-emerald-500"
+                className="text-emerald-500 dark:text-brand-darkTextLow"
               >
                 Goal
               </Text>
               <Text
                 style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-                className="text-gray-800"
+                className="text-gray-800 dark:text-brand-darkTextHigh"
               >
                 {savingsGoal ? `GHS ${savingsGoal}` : "—"}
               </Text>
             </View>
 
-            <View className="h-px bg-gray-100" />
+            <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
 
             <View className="flex-row justify-between items-center">
               <Text
                 style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-                className="text-emerald-500"
+                className="text-emerald-500 dark:text-brand-darkTextLow"
               >
                 Frequency
               </Text>
               <Text
                 style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-                className="text-gray-800"
+                className="text-gray-800 dark:text-brand-darkTextHigh"
               >
                 {frequency}
               </Text>
             </View>
 
-            <View className="h-px bg-gray-100" />
+            <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
 
             <View className="flex-row justify-between items-center">
               <Text
                 style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-                className="text-emerald-500"
+                className="text-emerald-500 dark:text-brand-darkTextLow"
               >
                 First due date
               </Text>
               <Text
                 style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-                className="text-gray-800"
+                className="text-gray-800 dark:text-brand-darkTextHigh"
               >
                 {formatDate(calcNextDueDate(startDate, frequency))}
               </Text>
@@ -374,7 +382,6 @@ const CreateGroup = () => {
         </TouchableOpacity>
       </View>
     </ScrollView>
-  );
-};
+)};
 
 export default CreateGroup;
