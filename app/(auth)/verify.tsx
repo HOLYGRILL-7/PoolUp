@@ -261,7 +261,7 @@ const VerifyScreen = () => {
                 style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }}
                 className="text-white"
               >
-                Let's go 🚀
+                Let's go..
               </Text>
             )}
           </TouchableOpacity>

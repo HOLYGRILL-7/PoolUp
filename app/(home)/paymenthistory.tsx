@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "expo-router";
-import { Moon, Sun, CheckCircle, Clock, XCircle, Receipt } from "lucide-react-native";
+import { Moon, Sun, CheckCircle, Clock, XCircle, Receipt, ChevronLeft } from "lucide-react-native";
 import firestore from "@react-native-firebase/firestore";
 import { useGroupStore } from "../../store/groupstore";
 import { useColorScheme } from "nativewind";
@@ -308,6 +308,13 @@ const PaymentHistory = () => {
   return (
     <ScrollView className="flex-1 bg-[#f0f7f4] dark:bg-brand-darkBg" showsVerticalScrollIndicator={false}>
       <View className="px-6 pt-12 pb-10">
+        {/* Back Button */}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center border border-transparent dark:border-brand-darkBorder mb-4 shadow-sm"
+        >
+          <ChevronLeft color={colorScheme === "dark" ? "#34d399" : "#0d5c45"} size={24} />
+        </TouchableOpacity>
 
         {/* Header */}
         <View className="flex-row items-start justify-between mb-1">

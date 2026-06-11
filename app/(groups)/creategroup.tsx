@@ -78,6 +78,12 @@ const CreateGroup = () => {
       // memberIds is a flat array of UIDs alongside the richer members array.
       // Firestore can query array-contains on memberIds to find a user's group
       // quickly on app start — you can't do array-contains on nested objects.
+
+      // nextBillingDate is 30 days from now — the first month is free.
+      // After that, the admin must pay GHS 20 via Paystack to keep the group active.
+      const nextBillingDate = new Date();
+      nextBillingDate.setDate(nextBillingDate.getDate() + 30);
+
       const groupRef = await firestore()
         .collection("groups")
         .add({
@@ -101,6 +107,14 @@ const CreateGroup = () => {
           ],
           totalSaved: 0,
           createdAt: now,
+          // ── Subscription tracking ──────────────────────────────────────
+          // First month is free. nextBillingDate drives the payment reminder
+          // logic on the dashboard. lastPaidAt is updated after each payment.
+          subscription: {
+            status: "active",
+            nextBillingDate: firestore.Timestamp.fromDate(nextBillingDate),
+            lastPaidAt: null,
+          },
         });
 
       // ── Seed the admin's first payment record ───────────────────────────
@@ -364,6 +378,15 @@ const CreateGroup = () => {
             </View>
           </View>
         </View>
+
+        {/* Platform fee notice */}
+        <Text
+          style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }}
+          className="text-gray-400 dark:text-brand-darkTextLow text-center mb-4"
+        >
+          {/* PoolUp charges a small platform fee to keep your group running.{"\n"}First month free. */}
+          PoolUp charges a small platform fee to keep your group running (first month free).
+        </Text>
 
         {/* Next button */}
         <TouchableOpacity

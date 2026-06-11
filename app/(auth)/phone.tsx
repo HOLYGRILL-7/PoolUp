@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from "react-native";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
@@ -181,14 +182,25 @@ const PhoneScreen = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Terms */}
+        {/* Terms & Privacy — placeholder links */}
         <Text
           style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }}
           className="text-gray-400 dark:text-brand-darkTextLow text-center mt-6"
         >
-          By continuing you agree to our{" "}
-          <Text className="text-[#0d5c45] dark:text-[#34d399]">Terms of Service</Text> and{" "}
-          <Text className="text-[#0d5c45] dark:text-[#34d399]">Privacy Policy</Text>
+          By continuing, you agree to our{" "}
+          <Text
+            onPress={() => Linking.openURL("https://doc-hosting.flycricket.io/poolup-terms-of-use/400d4e97-5f84-43bf-a077-63c00a446aa3/terms")}
+            className="text-[#0d5c45] dark:text-[#34d399]"
+          >
+            Terms of Service
+          </Text>
+          {" "}and{" "}
+          <Text
+            onPress={() => Linking.openURL("https://doc-hosting.flycricket.io/poolup-privacy-policy/151ebb89-948f-4af2-ae6c-a7d72560b677/privacy")}
+            className="text-[#0d5c45] dark:text-[#34d399]"
+          >
+            Privacy Policy
+          </Text>
         </Text>
       </View>
     </KeyboardAvoidingView>
