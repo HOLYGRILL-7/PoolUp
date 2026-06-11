@@ -5,6 +5,7 @@ import {
   TextInput,
   ScrollView,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
@@ -20,7 +21,10 @@ import { useColorScheme } from "nativewind";
 // For Weekly groups, it's 7 days from the start date.
 // This is stored as nextDueDate on the group document and drives the
 // countdown on the dashboard and the dueDate on each payment record.
-const calcNextDueDate = (startDate: Date, frequency: "Weekly" | "Monthly"): Date => {
+const calcNextDueDate = (
+  startDate: Date,
+  frequency: "Weekly" | "Monthly",
+): Date => {
   const due = new Date(startDate);
   if (frequency === "Monthly") {
     due.setMonth(due.getMonth() + 1);
@@ -100,7 +104,7 @@ const CreateGroup = () => {
                 network,
               },
             }),
-          }
+          },
         );
 
         const json = await response.json();
@@ -108,18 +112,21 @@ const CreateGroup = () => {
         if (!response.ok || json.error) {
           throw new Error(
             json.error?.message ||
-            "Failed to set up payout account. Please try again."
+              "Failed to set up payout account. Please try again.",
           );
         }
 
         subaccountCode = json.result?.subaccountCode ?? "";
 
         if (!subaccountCode) {
-          throw new Error("Paystack returned no subaccount code. Please try again.");
+          throw new Error(
+            "Paystack returned no subaccount code. Please try again.",
+          );
         }
       } catch (fnErr: any) {
         throw new Error(
-          fnErr?.message || "Failed to set up payout account. Please try again."
+          fnErr?.message ||
+            "Failed to set up payout account. Please try again.",
         );
       }
 
@@ -155,7 +162,7 @@ const CreateGroup = () => {
               phone: user.phoneNumber,
               name: user.displayName || user.phoneNumber,
               isAdmin: true,
-              status: "pending",   // ← all members start as pending each cycle
+              status: "pending", // ← all members start as pending each cycle
               joinedAt: now,
             },
           ],
@@ -190,7 +197,7 @@ const CreateGroup = () => {
           memberUid: user.uid,
           memberPhone: user.phoneNumber,
           memberName: user.displayName || user.phoneNumber,
-          amount: goalAmount,   // updated when more members join and we know the split
+          amount: goalAmount, // updated when more members join and we know the split
           status: "pending",
           dueDate: firestore.Timestamp.fromDate(nextDueDate),
           paidAt: null,
@@ -202,7 +209,6 @@ const CreateGroup = () => {
       // without passing complex objects through router params
       setGroup(groupRef.id, code, groupName.trim());
       router.push("/(groups)/invitemembers");
-
     } catch (err: any) {
       console.error("Error creating group:", err);
       // TODO: show error toast — surface err.message to the user
@@ -212,321 +218,344 @@ const CreateGroup = () => {
   };
 
   return (
-    <ScrollView
-      className="flex-1 bg-[#f0f7f4] dark:bg-brand-darkBg"
-      keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View className="px-6 pt-12 pb-10">
-        {/* Header */}
-        <View className="flex-row items-center justify-between mb-8">
-          <View className="flex-row items-center gap-3">
+      <ScrollView
+        className="flex-1 bg-[#f0f7f4] dark:bg-brand-darkBg"
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="px-6 pt-12 pb-10">
+          {/* Header */}
+          <View className="flex-row items-center justify-between mb-8">
+            <View className="flex-row items-center gap-3">
+              <TouchableOpacity
+                className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
+                onPress={() => router.back()}
+              >
+                <ArrowLeft
+                  color={colorScheme === "dark" ? "#a3bdae" : "#0d5c45"}
+                  size={20}
+                />
+              </TouchableOpacity>
+              <Text
+                style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 22 }}
+                className="text-gray-800 dark:text-brand-darkTextHigh"
+              >
+                Create a Group
+              </Text>
+            </View>
             <TouchableOpacity
               className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
-              onPress={() => router.back()}
+              onPress={toggleColorScheme}
             >
-              <ArrowLeft color={colorScheme === "dark" ? "#a3bdae" : "#0d5c45"} size={20} />
+              {colorScheme === "dark" ? (
+                <Sun color="#F5A623" size={20} />
+              ) : (
+                <Moon color="#0d5c45" size={20} />
+              )}
             </TouchableOpacity>
+          </View>
+
+          {/* Step indicator */}
+          <View className="items-center mb-8">
+            <View className="flex-row gap-2 mb-2">
+              <View className="w-8 h-2 rounded-full bg-[#0d5c45] dark:bg-brand-greenLight" />
+              <View className="w-8 h-2 rounded-full bg-emerald-200 dark:bg-emerald-950" />
+            </View>
             <Text
-              style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 22 }}
-              className="text-gray-800 dark:text-brand-darkTextHigh"
+              style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+              className="text-emerald-600 dark:text-brand-darkTextMed"
             >
-              Create a Group
+              Step 1 of 2 — Group Setup
             </Text>
           </View>
-          <TouchableOpacity
-            className="w-12 h-12 rounded-full bg-white dark:bg-brand-darkCard items-center justify-center"
-            onPress={toggleColorScheme}
-          >
-            {colorScheme === "dark" ? (
-              <Sun color="#F5A623" size={20} />
-            ) : (
-              <Moon color="#0d5c45" size={20} />
-            )}
-          </TouchableOpacity>
-        </View>
 
-        {/* Step indicator */}
-        <View className="items-center mb-8">
-          <View className="flex-row gap-2 mb-2">
-            <View className="w-8 h-2 rounded-full bg-[#0d5c45] dark:bg-brand-greenLight" />
-            <View className="w-8 h-2 rounded-full bg-emerald-200 dark:bg-emerald-950" />
-          </View>
+          {/* Group name */}
           <Text
-            style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-            className="text-emerald-600 dark:text-brand-darkTextMed"
+            style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+            className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
           >
-            Step 1 of 2 — Group Setup
-          </Text>
-        </View>
-
-        {/* Group name */}
-        <Text
-          style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
-        >
-          Group name
-        </Text>
-        <TextInput
-          value={groupName}
-          onChangeText={setGroupName}
-          placeholder="Jones Family Fund"
-          placeholderTextColor={colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"}
-          style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-          className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 text-gray-800 dark:text-brand-darkTextHigh border-2 border-transparent dark:border-brand-darkBorder"
-        />
-
-        {/* Savings goal */}
-        <Text
-          style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
-        >
-          Savings goal
-        </Text>
-        <View className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 flex-row items-center border-2 border-transparent dark:border-brand-darkBorder">
-          <Text
-            style={{ fontFamily: "Nunito_700Bold", fontSize: 16 }}
-            className="text-emerald-500 dark:text-[#34d399] mr-2"
-          >
-            GHS
+            Group name
           </Text>
           <TextInput
-            value={savingsGoal}
-            onChangeText={setSavingsGoal}
-            placeholder="5,000"
-            placeholderTextColor={colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"}
-            keyboardType="numeric"
-            style={{ fontFamily: "Nunito_400Regular", fontSize: 16, flex: 1 }}
-            className="text-gray-800 dark:text-brand-darkTextHigh"
-          />
-        </View>
-
-        {/* Contribution frequency */}
-        <Text
-          style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
-        >
-          Contribution frequency
-        </Text>
-        <View className="bg-emerald-100 dark:bg-brand-darkCard rounded-full flex-row p-1 mb-6">
-          {(["Weekly", "Monthly"] as const).map((option) => (
-            <TouchableOpacity
-              key={option}
-              onPress={() => setFrequency(option)}
-              className={`flex-1 py-3 rounded-full items-center
-                ${frequency === option ? "bg-[#0d5c45] dark:bg-brand-greenLight" : ""}
-              `}
-            >
-              <Text
-                style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-                className={
-                  frequency === option ? "text-white" : "text-emerald-700 dark:text-brand-darkTextMed"
-                }
-              >
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Start date */}
-        <Text
-          style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
-        >
-          Start date
-        </Text>
-        <TouchableOpacity
-          onPress={() => setShowDatePicker(true)}
-          className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 flex-row items-center justify-between border-2 border-transparent dark:border-brand-darkBorder"
-        >
-          <Text
+            value={groupName}
+            onChangeText={setGroupName}
+            placeholder="Jones Family Fund"
+            placeholderTextColor={
+              colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"
+            }
             style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-            className="text-gray-800 dark:text-brand-darkTextHigh"
-          >
-            {formatDate(startDate)}
-          </Text>
-          <Calendar color={colorScheme === "dark" ? "#34d399" : "#0d5c45"} size={20} />
-        </TouchableOpacity>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={startDate}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={onDateChange}
-            minimumDate={new Date()}
+            className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 text-gray-800 dark:text-brand-darkTextHigh border-2 border-transparent dark:border-brand-darkBorder"
           />
-        )}
 
-        {/* Live Preview */}
-        <View className="rounded-2xl overflow-hidden mb-8">
-          <View className="bg-[#0d5c45] dark:bg-brand-greenLight px-4 py-4 flex-row items-center justify-between">
+          {/* Savings goal */}
+          <Text
+            style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+            className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
+          >
+            Savings goal
+          </Text>
+          <View className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 flex-row items-center border-2 border-transparent dark:border-brand-darkBorder">
             <Text
-              style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-              className="text-white"
+              style={{ fontFamily: "Nunito_700Bold", fontSize: 16 }}
+              className="text-emerald-500 dark:text-[#34d399] mr-2"
             >
-              Live Preview
+              GHS
             </Text>
-            <View className="w-6 h-6 rounded-full bg-white dark:bg-brand-darkBg" />
+            <TextInput
+              value={savingsGoal}
+              onChangeText={setSavingsGoal}
+              placeholder="5,000"
+              placeholderTextColor={
+                colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"
+              }
+              keyboardType="numeric"
+              style={{ fontFamily: "Nunito_400Regular", fontSize: 16, flex: 1 }}
+              className="text-gray-800 dark:text-brand-darkTextHigh"
+            />
           </View>
 
-          <View className="bg-white dark:bg-brand-darkCard px-4 py-4 gap-3 border-x-2 border-b-2 border-transparent dark:border-brand-darkBorder rounded-b-2xl">
-            <View className="flex-row justify-between items-center">
-              <Text
-                style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-                className="text-emerald-500 dark:text-brand-darkTextLow"
-              >
-                Group
-              </Text>
-              <Text
-                style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-                className="text-gray-800 dark:text-brand-darkTextHigh"
-              >
-                {groupName || "—"}
-              </Text>
-            </View>
-
-            <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
-
-            <View className="flex-row justify-between items-center">
-              <Text
-                style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-                className="text-emerald-500 dark:text-brand-darkTextLow"
-              >
-                Goal
-              </Text>
-              <Text
-                style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-                className="text-gray-800 dark:text-brand-darkTextHigh"
-              >
-                {savingsGoal ? `GHS ${savingsGoal}` : "—"}
-              </Text>
-            </View>
-
-            <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
-
-            <View className="flex-row justify-between items-center">
-              <Text
-                style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-                className="text-emerald-500 dark:text-brand-darkTextLow"
-              >
-                Frequency
-              </Text>
-              <Text
-                style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-                className="text-gray-800 dark:text-brand-darkTextHigh"
-              >
-                {frequency}
-              </Text>
-            </View>
-
-            <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
-
-            <View className="flex-row justify-between items-center">
-              <Text
-                style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-                className="text-emerald-500 dark:text-brand-darkTextLow"
-              >
-                First due date
-              </Text>
-              <Text
-                style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-                className="text-gray-800 dark:text-brand-darkTextHigh"
-              >
-                {formatDate(calcNextDueDate(startDate, frequency))}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Platform fee notice */}
-        <Text
-          style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }}
-          className="text-gray-400 dark:text-brand-darkTextLow text-center mb-4"
-        >
-          {/* PoolUp charges a small platform fee to keep your group running.{"\n"}First month free. */}
-          PoolUp charges a small platform fee to keep your group running (first month free).
-        </Text>
-
-        {/* MoMo payout number */}
-        <Text
-          style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
-        >
-          MoMo payout number
-        </Text>
-        <TextInput
-          value={payoutNumber}
-          onChangeText={setPayoutNumber}
-          placeholder="024 000 0000"
-          placeholderTextColor={colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"}
-          keyboardType="phone-pad"
-          style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
-          className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-4 text-gray-800 dark:text-brand-darkTextHigh border-2 border-transparent dark:border-brand-darkBorder"
-        />
-
-        {/* Network selector */}
-        <Text
-          style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
-          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
-        >
-          Mobile network
-        </Text>
-        <View className="bg-emerald-100 dark:bg-brand-darkCard rounded-full flex-row p-1 mb-6">
-          {(["MTN", "VOD", "ATL"] as const).map((net) => {
-            const labels: Record<string, string> = {
-              MTN: "MTN",
-              VOD: "Vodafone",
-              ATL: "AirtelTigo",
-            };
-            return (
+          {/* Contribution frequency */}
+          <Text
+            style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+            className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
+          >
+            Contribution frequency
+          </Text>
+          <View className="bg-emerald-100 dark:bg-brand-darkCard rounded-full flex-row p-1 mb-6">
+            {(["Weekly", "Monthly"] as const).map((option) => (
               <TouchableOpacity
-                key={net}
-                onPress={() => setNetwork(net)}
+                key={option}
+                onPress={() => setFrequency(option)}
                 className={`flex-1 py-3 rounded-full items-center
-                  ${network === net ? "bg-[#0d5c45] dark:bg-brand-greenLight" : ""}
+                ${frequency === option ? "bg-[#0d5c45] dark:bg-brand-greenLight" : ""}
                 `}
               >
                 <Text
-                  style={{ fontFamily: "Nunito_700Bold", fontSize: 13 }}
+                  style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
                   className={
-                    network === net
+                    frequency === option
                       ? "text-white"
                       : "text-emerald-700 dark:text-brand-darkTextMed"
                   }
                 >
-                  {labels[net]}
+                  {option}
                 </Text>
               </TouchableOpacity>
-            );
-          })}
-        </View>
+            ))}
+          </View>
 
-        {/* Helper text */}
-        <Text
-          style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }}
-          className="text-gray-400 dark:text-brand-darkTextLow text-center mb-6"
-        >
-          Member payments will be settled to this MoMo number.
-        </Text>
-
-        {/* Next button */}
-        <TouchableOpacity
-          disabled={!canProceed || loading}
-          onPress={handleCreateGroup}
-          className={`rounded-full py-4 items-center justify-center
-            ${canProceed && !loading ? "bg-[#F5A623]" : "bg-[#F5A623]/40"}
-          `}
-        >
+          {/* Start date */}
           <Text
-            style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }}
-            className="text-white"
+            style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+            className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
           >
-            {loading ? "Setting up payout..." : "Next"}
+            Start date
           </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-)};
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-6 flex-row items-center justify-between border-2 border-transparent dark:border-brand-darkBorder"
+          >
+            <Text
+              style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
+              className="text-gray-800 dark:text-brand-darkTextHigh"
+            >
+              {formatDate(startDate)}
+            </Text>
+            <Calendar
+              color={colorScheme === "dark" ? "#34d399" : "#0d5c45"}
+              size={20}
+            />
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={startDate}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={onDateChange}
+              minimumDate={new Date()}
+            />
+          )}
+
+          {/* Live Preview */}
+          <View className="rounded-2xl overflow-hidden mb-8">
+            <View className="bg-[#0d5c45] dark:bg-brand-greenLight px-4 py-4 flex-row items-center justify-between">
+              <Text
+                style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+                className="text-white"
+              >
+                Live Preview
+              </Text>
+              <View className="w-6 h-6 rounded-full bg-white dark:bg-brand-darkBg" />
+            </View>
+
+            <View className="bg-white dark:bg-brand-darkCard px-4 py-4 gap-3 border-x-2 border-b-2 border-transparent dark:border-brand-darkBorder rounded-b-2xl">
+              <View className="flex-row justify-between items-center">
+                <Text
+                  style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+                  className="text-emerald-500 dark:text-brand-darkTextLow"
+                >
+                  Group
+                </Text>
+                <Text
+                  style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+                  className="text-gray-800 dark:text-brand-darkTextHigh"
+                >
+                  {groupName || "—"}
+                </Text>
+              </View>
+
+              <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
+
+              <View className="flex-row justify-between items-center">
+                <Text
+                  style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+                  className="text-emerald-500 dark:text-brand-darkTextLow"
+                >
+                  Goal
+                </Text>
+                <Text
+                  style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+                  className="text-gray-800 dark:text-brand-darkTextHigh"
+                >
+                  {savingsGoal ? `GHS ${savingsGoal}` : "—"}
+                </Text>
+              </View>
+
+              <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
+
+              <View className="flex-row justify-between items-center">
+                <Text
+                  style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+                  className="text-emerald-500 dark:text-brand-darkTextLow"
+                >
+                  Frequency
+                </Text>
+                <Text
+                  style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+                  className="text-gray-800 dark:text-brand-darkTextHigh"
+                >
+                  {frequency}
+                </Text>
+              </View>
+
+              <View className="h-px bg-gray-100 dark:bg-brand-darkBorder" />
+
+              <View className="flex-row justify-between items-center">
+                <Text
+                  style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+                  className="text-emerald-500 dark:text-brand-darkTextLow"
+                >
+                  First due date
+                </Text>
+                <Text
+                  style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+                  className="text-gray-800 dark:text-brand-darkTextHigh"
+                >
+                  {formatDate(calcNextDueDate(startDate, frequency))}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Platform fee notice */}
+          <Text
+            style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }}
+            className="text-gray-400 dark:text-brand-darkTextLow text-center mb-4"
+          >
+            {/* PoolUp charges a small platform fee to keep your group running.{"\n"}First month free. */}
+            GHS 20/month keeps your group running. First month? Our treat.{" "}
+            {/* <Text className="text-gray-600 dark:text-brand-darkTextHigh">
+              The first month is on us!
+            </Text> */}
+          </Text>
+
+          {/* MoMo payout number */}
+          <Text
+            style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+            className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
+          >
+            MoMo payout number
+          </Text>
+          <TextInput
+            value={payoutNumber}
+            onChangeText={setPayoutNumber}
+            placeholder="024 000 0000"
+            placeholderTextColor={
+              colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"
+            }
+            keyboardType="phone-pad"
+            style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
+            className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-4 text-gray-800 dark:text-brand-darkTextHigh border-2 border-transparent dark:border-brand-darkBorder"
+          />
+
+          {/* Network selector */}
+          <Text
+            style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+            className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
+          >
+            Mobile network
+          </Text>
+          <View className="bg-emerald-100 dark:bg-brand-darkCard rounded-full flex-row p-1 mb-6">
+            {(["MTN", "VOD", "ATL"] as const).map((net) => {
+              const labels: Record<string, string> = {
+                MTN: "MTN",
+                VOD: "Vodafone",
+                ATL: "AirtelTigo",
+              };
+              return (
+                <TouchableOpacity
+                  key={net}
+                  onPress={() => setNetwork(net)}
+                  className={`flex-1 py-3 rounded-full items-center
+                  ${network === net ? "bg-[#0d5c45] dark:bg-brand-greenLight" : ""}
+                  `}
+                >
+                  <Text
+                    style={{ fontFamily: "Nunito_700Bold", fontSize: 13 }}
+                    className={
+                      network === net
+                        ? "text-white"
+                        : "text-emerald-700 dark:text-brand-darkTextMed"
+                    }
+                  >
+                    {labels[net]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Helper text */}
+          <Text
+            style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }}
+            className="text-gray-400 dark:text-brand-darkTextLow text-center mb-6"
+          >
+            Member payments will be settled to this MoMo number.
+          </Text>
+
+          {/* Next button */}
+          <TouchableOpacity
+            disabled={!canProceed || loading}
+            onPress={handleCreateGroup}
+            className={`rounded-full py-4 items-center justify-center
+            ${canProceed && !loading ? "bg-[#F5A623]" : "bg-[#F5A623]/40"}
+            `}
+          >
+            <Text
+              style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }}
+              className="text-white"
+            >
+              {loading ? "Setting up payout..." : "Next"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
 
 export default CreateGroup;

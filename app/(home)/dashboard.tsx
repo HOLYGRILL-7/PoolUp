@@ -65,7 +65,7 @@ type Group = {
   code: string;
   adminId: string;
   myContribution: number;
-  subaccountCode?: string;   // Paystack subaccount for MoMo payout splits
+  subaccountCode?: string; // Paystack subaccount for MoMo payout splits
   subscription?: Subscription;
 };
 
@@ -552,7 +552,7 @@ const Dashboard = () => {
         duration: 1500,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
-      })
+      }),
     ).start();
   }, [pulseAnim]);
 
@@ -603,22 +603,23 @@ const Dashboard = () => {
     outputRange: [0, 1],
   });
 
-  const getInitials = () => {
-    const name = currentUser?.displayName || currentUser?.phoneNumber || "";
-    if (!name) return "?";
-    if (name.startsWith("+233")) {
-      const remaining = name.replace("+233", "");
-      return remaining.charAt(0);
-    }
-    if (name.startsWith("+")) {
-      return name.charAt(1);
-    }
+const getInitials = () => {
+  const name = currentUser?.displayName || "";
+  const phone = currentUser?.phoneNumber || "";
+  
+  if (name) {
     const parts = name.split(" ").filter(Boolean);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return name.charAt(0).toUpperCase();
-  };
+  }
+  
+  if (phone) {
+    // Use last 2 digits of phone number
+    return phone.slice(-2);
+  }
+  
+  return "Me";
+};
 
   // Determine if current user is the admin
   const isAdmin = group?.adminId === currentUser?.uid;
@@ -632,11 +633,11 @@ const Dashboard = () => {
         style: "destructive",
         onPress: async () => {
           try {
-            // currentUser is already the reactive user from onAuthStateChanged
             await auth().signOut();
-            // auth state change will propagate and index.tsx will redirect
           } catch (e) {
-            console.error("Sign out error:", e);
+            // ignore
+          } finally {
+            router.replace("/(auth)/phone");
           }
         },
       },
@@ -749,9 +750,7 @@ const Dashboard = () => {
             const doc = snapshot.docs[0];
             const data = doc.data();
             // Restore the store so subsequent renders use the cached value
-            useGroupStore
-              .getState()
-              .setGroup(doc.id, data.code, data.name);
+            useGroupStore.getState().setGroup(doc.id, data.code, data.name);
             // groupId change will retrigger this effect with the real id
           } else {
             setLoading(false);
@@ -1332,7 +1331,16 @@ const Dashboard = () => {
 
       {/* ── Sidebar Drawer ───────── */}
       {drawerOpen && (
-        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+          }}
+        >
           {/* Overlay */}
           <Animated.View
             style={{
@@ -1434,7 +1442,7 @@ const Dashboard = () => {
 
             {/* Subscription Info (Admin Only) */}
             {isAdmin && group.subscription?.nextBillingDate && (
-              <View className="flex-row items-center gap-3 h-[56px] px-6">
+              <View className="flex-row items-center gap-3 px-6 py-3">
                 <Bell
                   color={colorScheme === "dark" ? "#34d399" : "#0d5c45"}
                   size={20}
@@ -1445,6 +1453,12 @@ const Dashboard = () => {
                     className="text-gray-700 dark:text-brand-darkTextHigh"
                   >
                     Subscription
+                  </Text>
+                  <Text
+                    style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }}
+                    className="text-gray-400 dark:text-brand-darkTextLow"
+                  >
+                    GHS 20/month.
                   </Text>
                   <Text
                     style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }}
