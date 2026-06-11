@@ -7,12 +7,137 @@ const db = admin.firestore();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Config
-// Set these via: firebase functions:config:set poolup.arkesel_key="YOUR_KEY"
-// Then access with functions.config().poolup.arkesel_key
+// Set these in functions/.env and functions/.env.local (keys: PAYSTACK_SECRET_KEY, ARKESEL_KEY)
+// Then access with process.env.PAYSTACK_SECRET_KEY, process.env.ARKESEL_KEY
 // ─────────────────────────────────────────────────────────────────────────────
 
 const getArkeselKey = (): string =>
-  (functions.config().poolup?.arkesel_key as string) || "";
+  process.env.ARKESEL_KEY || "";
+
+const getPaystackSecretKey = (): string =>
+  process.env.PAYSTACK_SECRET_KEY || "";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createPaystackSubaccount — callable from the React Native app
+//
+// Accepts: { groupName, payoutNumber, network }
+//   network: 'MTN' | 'VOD' | 'ATL'
+//
+// Creates a Paystack subaccount so member payments can be split and settled
+// directly to the group's MoMo wallet.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const createPaystackSubaccount = functions
+  .region("us-central1")
+  .https.onCall(async (data, context) => {
+    // Require authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "You must be signed in to create a subaccount."
+      );
+    }
+
+    const { groupName, payoutNumber, network } = data as {
+      groupName?: string;
+      payoutNumber?: string;
+      network?: string;
+    };
+
+    // Input validation
+    if (!groupName || typeof groupName !== "string" || !groupName.trim()) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "groupName is required."
+      );
+    }
+
+    if (!payoutNumber || typeof payoutNumber !== "string" || !payoutNumber.trim()) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "payoutNumber is required."
+      );
+    }
+
+    const validNetworks = ["MTN", "VOD", "ATL"];
+    if (!network || !validNetworks.includes(network)) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        `network must be one of: ${validNetworks.join(", ")}.`
+      );
+    }
+
+    const secretKey = getPaystackSecretKey();
+    if (!secretKey) {
+      functions.logger.error("Paystack secret key is not configured.");
+      throw new functions.https.HttpsError(
+        "internal",
+        "Payment provider is not configured. Please contact support."
+      );
+    }
+
+    functions.logger.info("Creating Paystack subaccount", {
+      groupName: groupName.trim(),
+      network,
+      callerUid: context.auth.uid,
+    });
+
+    try {
+      const response = await axios.post(
+        "https://api.paystack.co/subaccount",
+        {
+          business_name: groupName.trim(),
+          settlement_bank: network,   // Paystack uses MTN / VOD / ATL for GH MoMo
+          account_number: payoutNumber.trim(),
+          percentage_charge: 0,
+          currency: "GHS",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${secretKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const subaccountCode: string = response.data?.data?.subaccount_code;
+
+      if (!subaccountCode) {
+        functions.logger.error("Paystack returned no subaccount_code", {
+          responseData: response.data,
+        });
+        throw new functions.https.HttpsError(
+          "internal",
+          "Failed to create subaccount — Paystack returned an unexpected response."
+        );
+      }
+
+      functions.logger.info("Paystack subaccount created", {
+        subaccountCode,
+        groupName: groupName.trim(),
+      });
+
+      return { subaccountCode };
+    } catch (err: any) {
+      // Re-throw our own HttpsErrors as-is
+      if (err instanceof functions.https.HttpsError) throw err;
+
+      const paystackMessage: string =
+        err.response?.data?.message ||
+        err.message ||
+        "Unknown error from Paystack.";
+
+      functions.logger.error("Paystack subaccount creation failed", {
+        error: paystackMessage,
+        status: err.response?.status,
+      });
+
+      throw new functions.https.HttpsError(
+        "internal",
+        `Could not create payout account: ${paystackMessage}`
+      );
+    }
+  });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // sendArkeselSMS — calls the Arkesel V2 API

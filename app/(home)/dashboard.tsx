@@ -65,6 +65,7 @@ type Group = {
   code: string;
   adminId: string;
   myContribution: number;
+  subaccountCode?: string;   // Paystack subaccount for MoMo payout splits
   subscription?: Subscription;
 };
 
@@ -420,9 +421,6 @@ const SubscriptionGateModal = ({
       email,
       amount: 2000,
       reference,
-      channels: ["mobile_money"],
-      currency: "GHS",
-      phone: currentUser?.phoneNumber?.replace('+233', '0') || '',
       onSuccess: async () => {
         try {
           const now = firestore.Timestamp.now();
@@ -536,7 +534,14 @@ const Dashboard = () => {
 
   // Get groupId from Zustand store set during create/join
   const groupId = useGroupStore((state) => state.groupId);
-  const currentUser = auth().currentUser;
+
+  // Use reactive auth state — auth().currentUser is null synchronously on
+  // cold-start until Firebase restores the persisted session.
+  const [currentUser, setCurrentUser] = useState(() => auth().currentUser);
+  useEffect(() => {
+    const unsub = auth().onAuthStateChanged((user) => setCurrentUser(user));
+    return unsub;
+  }, []);
 
   // ── Pulsing Glow Ring Animation ───────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -627,8 +632,9 @@ const Dashboard = () => {
         style: "destructive",
         onPress: async () => {
           try {
+            // currentUser is already the reactive user from onAuthStateChanged
             await auth().signOut();
-            // auth gate in index.tsx will redirect automatically
+            // auth state change will propagate and index.tsx will redirect
           } catch (e) {
             console.error("Sign out error:", e);
           }
@@ -652,9 +658,9 @@ const Dashboard = () => {
       email,
       amount,
       reference,
-      channels: ["mobile_money"],
-      currency: "GHS",
-      phone: currentUser?.phoneNumber?.replace('+233', '0') || '',
+      // Route payment to the group's MoMo subaccount (0% platform charge —
+      // the full amount goes to the group). Falls back gracefully if not set.
+      ...(group.subaccountCode ? { subaccount: group.subaccountCode } : {}),
       onSuccess: async () => {
         try {
           const db = firestore();
@@ -725,7 +731,35 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (!groupId) return;
+    // groupId may be null when the app cold-starts and the Zustand store is
+    // not yet hydrated (in-memory only). Fall back to a one-time Firestore
+    // lookup using the current user's UID — the same query index.tsx uses.
+    if (!groupId) {
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+      firestore()
+        .collection("groups")
+        .where("memberIds", "array-contains", currentUser.uid)
+        .limit(1)
+        .get()
+        .then((snapshot) => {
+          if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            const data = doc.data();
+            // Restore the store so subsequent renders use the cached value
+            useGroupStore
+              .getState()
+              .setGroup(doc.id, data.code, data.name);
+            // groupId change will retrigger this effect with the real id
+          } else {
+            setLoading(false);
+          }
+        })
+        .catch(() => setLoading(false));
+      return;
+    }
 
     // Real-time listener on the group document
     // Every time any field changes (member pays, new member joins)
@@ -805,6 +839,7 @@ const Dashboard = () => {
           code: data.code,
           adminId: data.adminId,
           myContribution,
+          subaccountCode: data.subaccountCode || undefined,
           subscription,
         });
 
@@ -812,7 +847,7 @@ const Dashboard = () => {
       });
 
     return () => unsubscribe();
-  }, [groupId]);
+  }, [groupId, currentUser]);
 
   // Admin nudge — opens WhatsApp for each unpaid member
   // For now uses WhatsApp deep link

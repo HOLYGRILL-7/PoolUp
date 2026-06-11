@@ -47,6 +47,10 @@ const CreateGroup = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // MoMo payout details — used to create a Paystack subaccount
+  const [payoutNumber, setPayoutNumber] = useState("");
+  const [network, setNetwork] = useState<"MTN" | "VOD" | "ATL" | "">("MTN");
+
   const formatDate = (date: Date) =>
     date.toLocaleDateString("en-GH", {
       month: "short",
@@ -59,7 +63,11 @@ const CreateGroup = () => {
     if (selected) setStartDate(selected);
   };
 
-  const canProceed = groupName.trim() && savingsGoal.trim();
+  const canProceed =
+    groupName.trim() &&
+    savingsGoal.trim() &&
+    payoutNumber.trim().length >= 10 &&
+    network !== "";
 
   const handleCreateGroup = async () => {
     if (!canProceed) return;
@@ -69,12 +77,58 @@ const CreateGroup = () => {
       const user = auth().currentUser;
       if (!user) throw new Error("No user logged in");
 
+      // ── Step 1: Create Paystack subaccount for MoMo payout ─────────────
+      // Calls the onCall Cloud Function via the Firebase REST endpoint.
+      // We pass the user's ID token in the Authorization header so the
+      // function can verify auth server-side — the Paystack secret key
+      // never leaves the Cloud Function environment.
+      let subaccountCode = "";
+      try {
+        const idToken = await user.getIdToken();
+        const response = await fetch(
+          "https://us-central1-pool-up-e5385.cloudfunctions.net/createPaystackSubaccount",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({
+              data: {
+                groupName: groupName.trim(),
+                payoutNumber: payoutNumber.trim(),
+                network,
+              },
+            }),
+          }
+        );
+
+        const json = await response.json();
+
+        if (!response.ok || json.error) {
+          throw new Error(
+            json.error?.message ||
+            "Failed to set up payout account. Please try again."
+          );
+        }
+
+        subaccountCode = json.result?.subaccountCode ?? "";
+
+        if (!subaccountCode) {
+          throw new Error("Paystack returned no subaccount code. Please try again.");
+        }
+      } catch (fnErr: any) {
+        throw new Error(
+          fnErr?.message || "Failed to set up payout account. Please try again."
+        );
+      }
+
       const code = generateCode();
       const now = firestore.Timestamp.now();
       const nextDueDate = calcNextDueDate(startDate, frequency);
       const goalAmount = parseFloat(savingsGoal.replace(/,/g, ""));
 
-      // ── Create the group document ───────────────────────────────────────
+      // ── Step 2: Create the group document ──────────────────────────────
       // memberIds is a flat array of UIDs alongside the richer members array.
       // Firestore can query array-contains on memberIds to find a user's group
       // quickly on app start — you can't do array-contains on nested objects.
@@ -107,6 +161,12 @@ const CreateGroup = () => {
           ],
           totalSaved: 0,
           createdAt: now,
+          // ── Paystack payout details ────────────────────────────────────
+          // subaccountCode is used in popup.checkout({ subaccount: ... })
+          // so member payments are split and settled to the group MoMo.
+          subaccountCode,
+          payoutNumber: payoutNumber.trim(),
+          payoutNetwork: network,
           // ── Subscription tracking ──────────────────────────────────────
           // First month is free. nextBillingDate drives the payment reminder
           // logic on the dashboard. lastPaidAt is updated after each payment.
@@ -117,7 +177,7 @@ const CreateGroup = () => {
           },
         });
 
-      // ── Seed the admin's first payment record ───────────────────────────
+      // ── Step 3: Seed the admin's first payment record ──────────────────
       // We pre-create a pending payment doc for the admin so it shows up
       // in Payment History immediately. When they pay, we update this doc.
       // Doc ID = uid so it's easy to update later without querying.
@@ -143,9 +203,9 @@ const CreateGroup = () => {
       setGroup(groupRef.id, code, groupName.trim());
       router.push("/(groups)/invitemembers");
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating group:", err);
-      // TODO: show error toast
+      // TODO: show error toast — surface err.message to the user
     } finally {
       setLoading(false);
     }
@@ -388,6 +448,68 @@ const CreateGroup = () => {
           PoolUp charges a small platform fee to keep your group running (first month free).
         </Text>
 
+        {/* MoMo payout number */}
+        <Text
+          style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
+        >
+          MoMo payout number
+        </Text>
+        <TextInput
+          value={payoutNumber}
+          onChangeText={setPayoutNumber}
+          placeholder="024 000 0000"
+          placeholderTextColor={colorScheme === "dark" ? "#7ba08d" : "#9CA3AF"}
+          keyboardType="phone-pad"
+          style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
+          className="bg-white dark:bg-brand-darkInput rounded-2xl px-4 py-4 mb-4 text-gray-800 dark:text-brand-darkTextHigh border-2 border-transparent dark:border-brand-darkBorder"
+        />
+
+        {/* Network selector */}
+        <Text
+          style={{ fontFamily: "Nunito_700Bold", fontSize: 15 }}
+          className="text-gray-800 dark:text-brand-darkTextHigh mb-2"
+        >
+          Mobile network
+        </Text>
+        <View className="bg-emerald-100 dark:bg-brand-darkCard rounded-full flex-row p-1 mb-6">
+          {(["MTN", "VOD", "ATL"] as const).map((net) => {
+            const labels: Record<string, string> = {
+              MTN: "MTN",
+              VOD: "Vodafone",
+              ATL: "AirtelTigo",
+            };
+            return (
+              <TouchableOpacity
+                key={net}
+                onPress={() => setNetwork(net)}
+                className={`flex-1 py-3 rounded-full items-center
+                  ${network === net ? "bg-[#0d5c45] dark:bg-brand-greenLight" : ""}
+                `}
+              >
+                <Text
+                  style={{ fontFamily: "Nunito_700Bold", fontSize: 13 }}
+                  className={
+                    network === net
+                      ? "text-white"
+                      : "text-emerald-700 dark:text-brand-darkTextMed"
+                  }
+                >
+                  {labels[net]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Helper text */}
+        <Text
+          style={{ fontFamily: "Nunito_400Regular", fontSize: 12 }}
+          className="text-gray-400 dark:text-brand-darkTextLow text-center mb-6"
+        >
+          Member payments will be settled to this MoMo number.
+        </Text>
+
         {/* Next button */}
         <TouchableOpacity
           disabled={!canProceed || loading}
@@ -400,7 +522,7 @@ const CreateGroup = () => {
             style={{ fontFamily: "Nunito_700Bold", fontSize: 18 }}
             className="text-white"
           >
-            {loading ? "Creating..." : "Next"}
+            {loading ? "Setting up payout..." : "Next"}
           </Text>
         </TouchableOpacity>
       </View>
