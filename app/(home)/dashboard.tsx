@@ -34,6 +34,18 @@ import { useGroupStore } from "../../store/groupstore";
 import { useColorScheme } from "nativewind";
 import { usePaystack } from "react-native-paystack-webview";
 
+// Paystack Ghana fee — update here if Paystack changes their rate
+const PAYSTACK_FEE_PERCENT = 0.0195; // 1.95% for Ghana
+const PAYSTACK_FLAT_FEE = 0; // No flat fee for Ghana
+
+const calculatePaystackFee = (amount: number): number => {
+  return parseFloat((amount * PAYSTACK_FEE_PERCENT + PAYSTACK_FLAT_FEE).toFixed(2));
+};
+
+const calculateTotal = (amount: number): number => {
+  return parseFloat((amount + calculatePaystackFee(amount)).toFixed(2));
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,7 +259,7 @@ const FlipCard = ({
 
   return (
     <View
-      style={{ height: 200, marginBottom: 8 }}
+      style={{ marginBottom: 8 }}
       {...panResponder.panHandlers}
     >
       <Text
@@ -258,118 +270,130 @@ const FlipCard = ({
       </Text>
 
       {/* FRONT — group overview */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 24,
-          width: "100%",
-          transform: [{ rotateY: frontRotate }],
-          opacity: frontOpacity,
-        }}
-      >
-        <View className="bg-[#0d5c45] dark:bg-brand-darkCard rounded-3xl px-6 py-6 border border-transparent dark:border-brand-darkBorder">
-          <Text
-            style={{ fontFamily: "Nunito_700Bold", fontSize: 13 }}
-            className="text-white/60 dark:text-[#a3bdae] mb-3"
-          >
-            Group Overview
-          </Text>
-          <View className="flex-row justify-between mb-3">
+      {!isFlipped && (
+        <Animated.View
+          style={{
+            width: "100%",
+            transform: [{ rotateY: frontRotate }],
+            opacity: frontOpacity,
+          }}
+        >
+          <View className="bg-[#0d5c45] dark:bg-brand-darkCard rounded-3xl px-6 py-6 border border-transparent dark:border-brand-darkBorder">
             <Text
-              style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-              className="text-white/70 dark:text-brand-darkTextMed"
+              style={{ fontFamily: "Nunito_700Bold", fontSize: 13 }}
+              className="text-white/60 dark:text-[#a3bdae] mb-3"
             >
-              Goal
+              Group Overview
             </Text>
-            <Text
-              style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-              className="text-white dark:text-brand-darkTextHigh"
-            >
-              GHS {group.savingsGoal.toLocaleString()}
-            </Text>
+            <View className="flex-row justify-between mb-3">
+              <Text
+                style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+                className="text-white/70 dark:text-brand-darkTextMed"
+              >
+                Goal
+              </Text>
+              <Text
+                style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+                className="text-white dark:text-brand-darkTextHigh"
+              >
+                GHS {group.savingsGoal.toLocaleString()}
+              </Text>
+            </View>
+            <View className="h-px bg-white/20 dark:bg-brand-darkBorder mb-3" />
+            <View className="flex-row justify-between mb-3">
+              <Text
+                style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+                className="text-white/70 dark:text-brand-darkTextMed"
+              >
+                Collected
+              </Text>
+              <Text
+                style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+                className="text-white dark:text-brand-darkTextHigh"
+              >
+                GHS {group.totalSaved.toLocaleString()}
+              </Text>
+            </View>
+            <View className="h-px bg-white/20 dark:bg-brand-darkBorder mb-3" />
+            <View className="flex-row justify-between">
+              <Text
+                style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
+                className="text-white/70 dark:text-brand-darkTextMed"
+              >
+                This month
+              </Text>
+              <Text
+                style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+                className="text-white dark:text-brand-darkTextHigh"
+              >
+                {paidCount}/{group.members.length} paid
+              </Text>
+            </View>
           </View>
-          <View className="h-px bg-white/20 dark:bg-brand-darkBorder mb-3" />
-          <View className="flex-row justify-between mb-3">
-            <Text
-              style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-              className="text-white/70 dark:text-brand-darkTextMed"
-            >
-              Collected
-            </Text>
-            <Text
-              style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-              className="text-white dark:text-brand-darkTextHigh"
-            >
-              GHS {group.totalSaved.toLocaleString()}
-            </Text>
-          </View>
-          <View className="h-px bg-white/20 dark:bg-brand-darkBorder mb-3" />
-          <View className="flex-row justify-between">
-            <Text
-              style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-              className="text-white/70 dark:text-brand-darkTextMed"
-            >
-              This month
-            </Text>
-            <Text
-              style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
-              className="text-white dark:text-brand-darkTextHigh"
-            >
-              {paidCount}/{group.members.length} paid
-            </Text>
-          </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
+      )}
 
       {/* BACK — personal card */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 24,
-          width: "100%",
-          transform: [{ rotateY: backRotate }],
-          opacity: backOpacity,
-        }}
-      >
-        <View className="bg-[#F5A623] rounded-3xl px-6 py-6">
-          <Text
-            style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-            className="text-white/80"
-          >
-            Your next contribution
-          </Text>
-          <Text
-            style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 36 }}
-            className="text-white mt-1"
-          >
-            GHS {group.myContribution}
-          </Text>
-          <Text
-            style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
-            className="text-white/80 mt-1"
-          >
-            ⏱ Due in {group.daysLeft} days
-          </Text>
-          <TouchableOpacity
-            disabled={hasPaid || isLocked}
-            onPress={onMarkAsPaid}
-            className={`rounded-full py-3 mt-4 flex-row items-center justify-center ${hasPaid ? "bg-emerald-600" : isLocked ? "bg-white/40" : "bg-white"}`}
-          >
+      {isFlipped && (
+        <Animated.View
+          style={{
+            width: "100%",
+            transform: [{ rotateY: backRotate }],
+            opacity: backOpacity,
+          }}
+        >
+          <View className="bg-[#F5A623] rounded-3xl px-6 py-6">
             <Text
-              style={{ fontFamily: "Nunito_700Bold", fontSize: 16 }}
-              className={
-                hasPaid
-                  ? "text-white"
-                  : isLocked
-                    ? "text-white/60"
-                    : "text-[#F5A623]"
-              }
+              style={{ fontFamily: "Nunito_400Regular", fontSize: 16 }}
+              className="text-white/80"
             >
-              {hasPaid ? "✓ Paid" : isLocked ? "🔒 Locked" : "Pay to Admin"}
+              Your next contribution
             </Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+            <Text
+              style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 36 }}
+              className="text-white mt-1"
+            >
+              GHS {calculateTotal(group.myContribution)}
+            </Text>
+            <Text
+              style={{ fontFamily: "Nunito_700Bold", fontSize: 14,  }}
+              className="text-white/70"
+            >
+              Your contribution: GHS {group.myContribution}
+            </Text>
+            <Text
+              style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+              className="text-white/70"
+            >
+              Processing fee: GHS {calculatePaystackFee(group.myContribution)}
+            </Text>
+            <Text
+              style={{ fontFamily: "Nunito_700Bold", fontSize: 14 }}
+              className="text-white/80 mt-1"
+            >
+              ⏱ Due in {group.daysLeft} days
+            </Text>
+            <TouchableOpacity
+              disabled={hasPaid || isLocked}
+              onPress={onMarkAsPaid}
+              className={`rounded-full py-3 mt-4 flex-row items-center justify-center ${hasPaid ? "bg-emerald-600" : isLocked ? "bg-white/40" : "bg-white"}`}
+            >
+              <Text
+                style={{ fontFamily: "Nunito_700Bold", fontSize: 16 }}
+                className={
+                  hasPaid
+                    ? "text-white"
+                    : isLocked
+                      ? "text-white/60"
+                      : "text-[#F5A623]"
+                }
+              >
+                {hasPaid ? "✓ Paid" : isLocked ? "🔒 Locked" : "Pay to Admin"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -652,7 +676,7 @@ const getInitials = () => {
     const phoneSlug = phone.replace(/^\+/, "").replace(/\s/g, "");
     const email = phoneSlug ? `${phoneSlug}@poolup.app` : "member@poolup.app";
 
-    const amount = group.myContribution;
+    const amount = calculateTotal(group.myContribution);
     const reference = `MEMBER-${group.id.slice(0, 8)}-${currentUser.uid.slice(0, 6)}-${Date.now()}`;
 
     popup.checkout({
@@ -1038,7 +1062,7 @@ const getInitials = () => {
 
           {/* Member contribution card */}
           {!isAdmin && (
-            <View className="bg-[#F5A623] rounded-3xl px-6 py-6 mt-4">
+            <View className="bg-[#F5A623] rounded-3xl px-6 py-6 mt-4 mb-6">
               <Text
                 style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
                 className="text-white/80"
@@ -1049,7 +1073,19 @@ const getInitials = () => {
                 style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 36 }}
                 className="text-white mt-1"
               >
-                GHS {group.myContribution}
+                GHS {calculateTotal(group.myContribution)}
+              </Text>
+              <Text
+                style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }}
+                className="text-white/70"
+              >
+                Your contribution: GHS {group.myContribution}
+              </Text>
+              <Text
+                style={{ fontFamily: "Nunito_400Regular", fontSize: 13 }}
+                className="text-white/70"
+              >
+                Processing fee: GHS {calculatePaystackFee(group.myContribution)}
               </Text>
               <Text
                 style={{ fontFamily: "Nunito_400Regular", fontSize: 14 }}
